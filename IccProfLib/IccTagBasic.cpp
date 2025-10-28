@@ -95,8 +95,8 @@ using std::min;
 #define __min min
 #endif
 
-#ifdef USEREFICCMAXNAMESPACE
-namespace refIccMAX {
+#ifdef USEICCDEVNAMESPACE
+namespace iccDEV {
 #endif
 
 // For Describe() nVerboseness levels < 25, maximum length of strings
@@ -7090,7 +7090,7 @@ bool CIccLocalizedUnicode::GetText(std::string &sText)
 
     //UTF-16 to UTF-32
 
-    if (*str <= 0xD7FF) {
+    if (*str <= 0xD7FF || *str >= 0xE000) {
       code32 = *str;
       str++;
     }
@@ -7099,6 +7099,10 @@ bool CIccLocalizedUnicode::GetText(std::string &sText)
       icUInt16Number low = *(str + 1) - 0xDC00;
       code32 = (low | high) + 0x10000;
       str += 2;
+    }
+    else {  //range dc00-dfff should only occur after a d800-dbfff
+      str++;
+      continue;
     }
 
     //UTF-32 to UTF-8 -------
@@ -12330,6 +12334,6 @@ icValidateStatus CIccTagEmbeddedNormalImage::Validate(std::string sigPath, std::
 
 
 
-#ifdef USEREFICCMAXNAMESPACE
-} //namespace refIccMAX
+#ifdef USEICCDEVNAMESPACE
+} //namespace iccDEV
 #endif

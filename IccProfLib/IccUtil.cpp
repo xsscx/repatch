@@ -74,6 +74,7 @@
 #include "IccStructFactory.h"
 #include "IccArrayFactory.h"
 #include "IccMpeFactory.h"
+#include "IccDefs.h"
 #include <stdlib.h>
 #include <memory.h>
 #include <ctype.h>
@@ -83,8 +84,8 @@
 
 #define PI 3.1415926535897932384626433832795
 
-#ifdef USEREFICCMAXNAMESPACE
-namespace refIccMAX {
+#ifdef USEICCDEVNAMESPACE
+namespace iccDEV {
 #endif
 
 ICCPROFLIB_API const char *icMsgValidateWarning = "Warning! - ";
@@ -918,17 +919,17 @@ icUInt32Number icIntMax(icUInt32Number v1, icUInt32Number v2)
 
 void icLabFromPcs(icFloatNumber *Lab)
 {
-  Lab[0] *= 100.0;
-  Lab[1] = (icFloatNumber)(Lab[1]*255.0 - 128.0);
-  Lab[2] = (icFloatNumber)(Lab[2]*255.0 - 128.0);
+  Lab[0] *= 100.0f;
+  Lab[1] = Lab[1]*255.0f - 128.0f;
+  Lab[2] = Lab[2]*255.0f - 128.0f;
 }
 
 
 void icLabToPcs(icFloatNumber *Lab)
 {
-  Lab[0] /= 100.0;
-  Lab[1] = (icFloatNumber)((Lab[1] + 128.0) / 255.0);
-  Lab[2] = (icFloatNumber)((Lab[2] + 128.0) / 255.0);
+  Lab[0] /= 100.0f;
+  Lab[1] = (Lab[1] + 128.0f) / 255.0f;
+  Lab[2] = (Lab[2] + 128.0f) / 255.0f;
 }
 
 void icXyzFromPcs(icFloatNumber *XYZ)
@@ -1931,6 +1932,9 @@ const icChar *CIccInfo::GetCmmSigName(icCmmSignature sig)
   case icSigDemoIccMAX:
     return "DemoIccMAX";
 
+  case icSigIccDEV:
+	  return "iccDEV";
+
   case icSigRolfGierling:
     return "Rolf Gierling Multitools";
 
@@ -2609,6 +2613,6 @@ CIccPixelBuf::~CIccPixelBuf()
     delete [] m_pixel;
 }
 
-#ifdef USEREFICCMAXNAMESPACE
-} //namespace refIccMAX
+#ifdef USEICCDEVNAMESPACE
+} //namespace iccDEV
 #endif

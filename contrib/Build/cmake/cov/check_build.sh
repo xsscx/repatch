@@ -36,4 +36,4 @@ for lib in $(find . -name '*.a'); do
 done
 
 echo ""
-echo "✅ Validation complete. Check 'asan_leak_report.*' if generated."
+echo "✅ Validation complete"

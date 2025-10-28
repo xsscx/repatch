@@ -86,18 +86,8 @@ emcc -c ~/lcms2/Little-CMS/src/*.c   -I~/lcms2/Little-CMS/include   -o ~/lcms2/L
 ```bash
 cd ~/pr152/repro3/DemoIccMAX/contrib/Build/cmake/cov/scanicc
 
-emcc scanicc-port-linux.c /home/xss/lcms2/Little-CMS/obj/*.o \
-  -I/home/xss/lcms2/Little-CMS/include \
-  -s USE_ZLIB=1 \
-  -s ALLOW_MEMORY_GROWTH=1 \
-  -s MODULARIZE=1 \
-  -s EXPORT_NAME="createModule" \
-  -s EXPORTED_FUNCTIONS='["_main"]' \
-  -s EXPORTED_RUNTIME_METHODS='["FS","callMain"]' \
-  -fsanitize=address -fno-omit-frame-pointer -g3 -O1 \
-  -Wall -Wextra -pedantic \
-  -Wno-unused-parameter -Wno-type-limits -Wno-misleading-indentation \
-  -o scanicc.js
+emcc scanicc-port-linux.c ~/lcms2/Little-CMS/obj/*.o   -I~/lcms2/Little-CMS/include   -s USE_ZLIB=1   -s ALLOW_MEMORY_GROWTH=1   -s MODULARIZE=1   -s EXPORT_NAME="createModule"   -s EXPORTED_FUNCTIONS='["_main"]'   -s EXPORTED_RUNTIME_METHODS='["FS","callMain"]'   -fsanitize=address -fno-omit-frame-pointer -g3 -O1   -Wall -Wextra -pedantic   -Wno-unused-parameter -Wno-type-limits -Wno-misleading-indentation   -o scanicc.js
 ```
 
 This will produce `scanicc.js` and `scanicc.wasm` for use in a web environment.
+

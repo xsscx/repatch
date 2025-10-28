@@ -4,15 +4,11 @@
     Contains:   Access ICC profile definitions and structures including
                 Version 4 extensions
 
-    Copyright:  (c) see ICC Software License
+    Copyright:  (c) see Software License
  */
 
 /*
- * The ICC Software License, Version 0.2
- *
- *
- * Copyright (c) 2003-2012 The International Color Consortium. All rights 
- * reserved.
+ * Copyright (c) International Color Consortium.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -71,8 +67,8 @@
 //Get any platform specific prototypes
 #include "IccProfLibConf.h"
 
-#ifdef USEREFICCMAXNAMESPACE
-namespace refIccMAX {
+#ifdef USEICCDEVNAMESPACE
+namespace iccDEV {
 #endif
 
 //Include the standard icProfileHeader definition file
@@ -90,27 +86,6 @@ typedef icUInt16Number icU8Fixed8Number;
 */
 #define icSigDevLabData     ((icColorSpaceSignature) 0x644C6162)  /* 'dLab' */
 #define icSigDevXYZData     ((icColorSpaceSignature) 0x6458595A)  /* 'dXYZ' */
-// ===========================================================================
-// LATEST FIX: Compile Errors
-// WHO: David Hoyt
-// DATE: 30 APRIL 2025 1800 EDT
-// INTENT: Push through compile errors by adding necessary fixes
-// OUTCOME: Added incremental changes for enum
-//
-//
-// BUG CLASSES: NaN, Enum etc..
-//
-// DEP ISSUES: None Identified
-// Added Definition below to resolve compile error
-// ===========================================================================
-#define icSigLab2Data                ((icColorSpaceSignature)0x6C623220)  /* 'lb2' */
-#define icSigDigitalCamera           ((icUInt32Number)0x6463616D)         /* 'dcam' */
-#define icSigFilmScanner             ((icUInt32Number)0x6673636E)         /* 'fscn' */
-#define icSigReflectiveScanner       ((icUInt32Number)0x7273636E)         /* 'rscn' */
-#define icSigInkJetPrinter           ((icUInt32Number)0x696A6574)         /* 'ijet' */
-#define icSigThermalPrinter          ((icUInt32Number)0x7468726D)         /* 'thrm' */
-#define icSigDyeSublimationPrinter   ((icUInt32Number)0x64737562)         /* 'dsub' */
-#define icSigRgbData                 ((icColorSpaceSignature)0x52474220)  /* 'RGB ' */
 
 
 /**
@@ -146,11 +121,8 @@ typedef enum {
 
 #pragma pack()
 
-#ifdef USEREFICCMAXNAMESPACE
-} //namespace refIccMAX
+#ifdef USEICCDEVNAMESPACE
+} //namespace iccDEV
 #endif
 
 #endif /* _ICCDEFS_H */
-
-
-

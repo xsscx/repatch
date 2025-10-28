@@ -1,34 +1,18 @@
 {
-  "name": "iccmax",
+  "name": "iccdev",
   "version": "2.2.61",
+  "description": "Developer tools for ICC color profiles",
   "builtin-baseline": "35c4249523ecc2ade23826f120d3f9f6a07a697c",
-  "summary": "Developer tools for ICC color profiles",
-  "description": "Open-source libraries and tools for creating, interacting with, and applying iccMAX and legacy ICC color profiles.",
-  "homepage": "https://github.com/InternationalColorConsortium/DemoIccMAX",
-  "documentation": "https://www.color.org/iccmax/index.xalter",
-  "supports": "windows | linux | osx",
-  "license": "BSD-3-Clause",
-  "licenseFile": "LICENSE.md",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/InternationalColorConsortium/DemoIccMAX"
-  },
-  "issues": "https://github.com/InternationalColorConsortium/DemoIccMAX/issues",
-  "maintainers": [
-    {
-      "name": "International Color Consortium",
-      "email": "info@color.org"
-    }
-  ],
   "dependencies": [
+    "vcpkg-cmake",
+    "vcpkg-cmake-config",
     "libpng",
     "wxwidgets",
     "tiff",
     "libxml2",
+    "libiconv",
     "nlohmann-json",
     "libjpeg-turbo"
   ],
-  "overrides": [],
-  "features": {},
-  "default-features": []
+  "overrides": []
 }

@@ -1,84 +1,71 @@
-# iccApplyNamedCmm
+# iccApplyToLink
 
 ## Overview
 
-`iccApplyNamedCmm` is a command-line tool that applies a chain of ICC profiles to textual or structured color data, producing transformed results in various formats. It supports named color transformations, JSON and legacy data inputs, and ICCv5 capabilities including debugging of calculator-based profiles.
+`iccApplyToLink` is a versatile command-line tool that builds either an ICC DeviceLink profile or a `.cube` LUT file by applying a sequence of ICC profiles. It supports fine-grained control over rendering intents, LUT size, interpolation, and Profile Connection Conditions (PCC).
+
+This tool is especially useful for creating link profiles for production workflows or transforming color spaces for VFX, printing, or display calibration.
 
 ---
 
 ## Features
 
-- Supports color data in:
-  - Legacy (plain text)
-  - JSON structured format
-  - Embedded ICC configurations
-- Applies ICC profiles using ICCMAX-style CMM
-- Supports named-to-named and pixel-to-named transformations
-- Built-in support for:
-  - Luminance PCS matching
-  - Profile Connection Conditions (PCC)
-  - ICC environment variable hints
-- Outputs transformed color data in:
-  - IT8
-  - JSON
-  - Text
+- Supports output as ICC v4/v5 DeviceLink or `.cube` 3D LUT format
+- Accepts a sequence of profiles and rendering intents
+- Handles Profile Connection Conditions (`-PCC`)
+- Applies CMM Environment variables (`-ENV:sig value`)
+- Supports LUT precision and custom input ranges
+- Choice of interpolation methods (linear/tetrahedral)
 
 ---
 
 ## Usage
 
-### Config-Based Mode
-
 ```sh
-iccApplyNamedCmm -cfg config.json
+iccApplyToLink output_file link_type lut_size option title min_input max_input use_src_xform interp profile_seq...
 ```
 
-- `config.json` must include:
-  - `dataFiles`
-  - `profileSequence`
-  - (optionally) `colorData`
-
-### Legacy CLI Mode
+### Example
 
 ```sh
-iccApplyNamedCmm input.txt encoding[:precision[:digits]] interpolation {{-ENV:tag value} profile.icc intent {-PCC pcc.icc}}
+iccApplyToLink myLink.icc 0 33 1 "My DisplayLink" 0.0 1.0 1 1 sRGB.icc 1 printer.icc 1
 ```
 
 ---
 
-## Arguments
+## Parameters
 
-- **`encoding` values**:
-  - `0` = Lab/XYZ Value
-  - `1` = Percent
-  - `2` = Unit Float
-  - `3` = Raw Float
-  - `4` = 8-bit
-  - `5` = 16-bit
-  - `6` = 16-bit ICCv2 style
-
-- **Interpolation**:
-  - `0` = Linear
-  - `1` = Tetrahedral
-
-- **Intent** (plus modifiers):
-  - `0–3`: Perceptual, Relative, Saturation, Absolute
-  - `+10`: Disable D2Bx/B2Dx
-  - `+20`: Preview
-  - `+30`: Gamut
-  - `+40`: With BPC
-  - `+100`: Luminance-based PCS match
-  - `+1000`: ICCv5 SubProfile
-  - `+100000`: Use HToS tag
+- `output_file`: Path to save the ICC or `.cube` output
+- `link_type`:
+  - `0` = ICC DeviceLink
+  - `1` = `.cube` LUT
+- `lut_size`: Grid size per dimension (e.g., 33)
+- `option`:
+  - For ICC: `0` = v4, `1` = v5
+  - For cube: precision (e.g., `4`)
+- `title`: Title embedded in output
+- `min_input` / `max_input`: Input value range, e.g., `0.0` to `1.0`
+- `use_src_xform`: `1` = use source xform from first profile, else destination
+- `interp`: `0` = linear, `1` = tetrahedral
+- `profile_seq`: Sequence of profile files and intents, optionally with:
+  - `-ENV:TAG value` to set environment sigs
+  - `-PCC path.icc` to provide connection conditions
 
 ---
 
-## Output Formats
+## Rendering Intents
 
-Determined by config or filename:
-- `output.txt`: legacy textual
-- `output.json`: JSON color set
-- `output.it8`: IT8 table
+Supports all ICC intents plus combinations:
+
+| Code | Intent |
+|------|--------|
+| 0–3  | Perceptual / Relative / Saturation / Absolute |
+| 10+  | Skip D2Bx/B2Dx |
+| 20+  | Preview Intents |
+| 40+  | BPC-enabled |
+| 50+  | BDRF variations |
+| 100+ | Luminance adjusted |
+| 1000+| V5 sub-profile override |
 
 ---
 
@@ -95,20 +82,7 @@ make -j32
 
 ---
 
-## Example
-
-```sh
-iccApplyNamedCmm -cfg config_named.json
-```
-
-```sh
-iccApplyNamedCmm colors.txt 0:4:7 1 profile.icc 1
-```
-
----
-
 ## Changelog
 
-- Original implementation by Max Derhak (2003)
-- JSON support and calculator debugger added by Max Derhak (2024)
-- Structural cleanup and usage clarity by David Hoyt (2025)
+- Initial implementation by Max Derhak (Mar 2023)
+- Multi-output support and argument extensions by David Hoyt (2025)

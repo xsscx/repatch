@@ -6,15 +6,11 @@
 
     Version:    V1
 
-    Copyright:  � see ICC Software License
+    Copyright:  (c) see Software License
 */
 
 /*
- * The ICC Software License, Version 0.2
- *
- *
- * Copyright (c) 2003-2012 The International Color Consortium. All rights 
- * reserved.
+ * Copyright (c) International Color Consortium.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -75,10 +71,9 @@
 #include <list>
 #include <string>
 #include "IccDefs.h"
-#include "IccSignatureUtils.h"
 
-#ifdef USEREFICCMAXNAMESPACE
-namespace refIccMAX {
+#ifdef USEICCDEVNAMESPACE
+namespace iccDEV {
 #endif
 
 class CIccIO;
@@ -1720,6 +1715,10 @@ public:
 
   const icFloatNumber *getObserver(icSpectralRange &observerRange) const;
   bool setObserver(icStandardObserver observerId, const icSpectralRange &observerRange, const icFloatNumber *observer);
+
+  bool isStandardPcc() const {
+    return m_stdObserver == icStdObs1931TwoDegrees || m_stdIlluminant == icIlluminantD50;
+  }
     
   icFloatXYZNumber m_illuminantXYZ;
   icFloatXYZNumber m_surroundXYZ;
@@ -1824,8 +1823,8 @@ protected:
 };
 
 
-#ifdef USEREFICCMAXNAMESPACE
-} //namespace refIccMAX
+#ifdef USEICCDEVNAMESPACE
+} //namespace iccDEV
 #endif
 
 #endif // !defined(_ICCTAGBASIC_H)

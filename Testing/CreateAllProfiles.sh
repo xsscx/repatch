@@ -5,9 +5,9 @@
 #                                        All rights reserved.
 # 
 #
-#  Last Updated: Mon Mar 24 16:40:19 EDT 2025 by David Hoyt
-#  date -d @1742848819
-#  Mon Mar 24 16:40:19 EDT 2025
+#  Last Updated: Thu May  8 07:33:04 EDT 2025 by David Hoyt
+#
+#
 #
 #
 #
@@ -300,7 +300,7 @@ echo "====================== Summary Count =========================="
 # Count number of ICCs that exist to confirm
 if [ "$1" != "clean" ]
 then
-	echo -n "Range 204-208 ICC files: "
+	echo -n "ICC files: "
 	find . -iname "*.icc" | wc -l
 else
 	echo -n "Should be 80 ICC files after a clean: "

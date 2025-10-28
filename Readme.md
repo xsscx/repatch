@@ -1,61 +1,47 @@
-# Research
+# iccDEV
 
-**Last Updated:** 22-JULY-2025 0000Z by David Hoyt
+## Introduction
 
-**Intent:** CICD, Research, Code Coverage, AFL Makefiles
+The purpose of the International Color Consortium (ICC) is to promote
+the use and adoption of open, vendor-neutral, cross-platform color management systems.
+The International Color Consortium encourages vendors to support the ICC profile
+format and the workflows required to use ICC profiles.
 
-### Build cov
+The iccDEV project (formerly known as DemoIccMAX) provides an
+open source set of libraries and tools that allow for the interaction, manipulation,
+and application of ICC based color management profiles based on the 
+[ICC profile specification](http://www.color.org/icc_specs2.xalter) and the 
+[iccMAX profile specification](http://www.color.org/iccmax.xalter).
 
-```
-git clone https://github.com/InternationalColorConsortium/DemoIccMAX.git
-cd DemoIccMAX/
-git checkout research
-cd contrib/Build/cmake/cov/
-bash build.sh
-```
-
-### Triples Testing Summary
+All documentation is in the "docs" directory. If you're just getting started, 
+here's how we recommend you read the Introduction for a list of features and 
+libraries included in iccDEV.
 
 
-| **Operating System**         | **Kernel Version**                               | **Architecture**     | **Environment**                       |
-|-----------------------------|--------------------------------------------------|----------------------|---------------------------------------|
-| Linux (Ubuntu 24.04 LTS)     | Linux Kernel 6.8.0-31-generic (glibc)   | x86_64           | Hyper-V (Iso) |
+## Quickstart
 
-## Scan Build Summary
+Install iccDEV using the Homebrew or NPM package managers:
 
-| **Field**              | **Value**                          |
-|------------------------|--------------------------------------|
-| **User**               | xss@xnu.x86                     |
-| **Working Directory**  | /opt/pr145/DemoIccMAX/Build   |
-| **Command Line**       | make -j12                           |
-| **Clang Version**      | Homebrew clang version 20.1.7       |
-| **Date**               | Wed Jul 23 06:53:13 2025            |
+`brew install iccdev` or `npm install iccdev`
 
-## Bug Summary
+To build from source view the [Build documentation](docs/build.md).
 
-| **Bug Type**                          | **Quantity** |
-|----------------------------------------|--------------|
-| **All Bugs**                           | 77           |
-| **Logic Error**                        |              |
-| Dereference of null pointer            | 1            |
-| Garbage return value                   | 1            |
-| Result of operation is garbage/undefined| 4           |
-| Returning null reference               | 1            |
-| **Memory Error**                       |              |
-| Memory leak                            | 5            |
-| Use of zero allocated                  | 2            |
-| Use-after-free                         | 3            |
-| **Stream Handling Error**              |              |
-| Closed stream                          | 1            |
-| Invalid stream state                   | 2            |
-| Resource leak                          | 3            |
-| Stream already in EOF                  | 2            |
-| **Unused Code**                        |              |
-| Dead assignment                        | 24           |
-| Dead increment                         | 4            |
-| Dead initialization                    | 22           |
-| Dead nested assignment                 | 2            |
+## Contributing
 
----
+This software consists of voluntary contributions made by many individuals
+on behalf of the The International Color Consortium.
 
-[The ICC Software License](LICENSE.md)
+The first thing to do, before anything else, is talk to us! Whether you're
+reporting an issue, requesting or implementing a feature, or just asking a
+question; please don’t hesitate to reach out to project maintainers or the
+community as a whole. This is an important first step because your issue,
+feature, or the question may have been solved or discussed already, and you’ll
+save yourself a lot of time by asking first.
+
+## License
+
+iccDEV is licensed under the BSD 3-Clause “New” or “Revised” License
+
+Membership in the ICC is encouraged when this software is used for commercial purposes.
+For more information on The International Color Consortium,
+please visit [www.color.org](http://www.color.org).

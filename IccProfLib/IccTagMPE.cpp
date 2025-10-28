@@ -82,8 +82,8 @@
 #include <map>
 #include "IccUtil.h"
 
-#ifdef USEREFICCMAXNAMESPACE
-namespace refIccMAX {
+#ifdef USEICCDEVNAMESPACE
+namespace iccDEV {
 #endif
 
 /**
@@ -1116,7 +1116,7 @@ bool CIccTagMultiProcessElement::Write(CIccIO *pIO)
     icUInt32Number offsetPos = pIO->Tell();
 
     if (m_position) {
-      delete [] m_position;
+      free(m_position);
     }
 
     m_position = (icPositionNumber*)calloc(m_nProcElements, sizeof(icPositionNumber));
@@ -1889,6 +1889,6 @@ icValidateStatus CIccTagMultiProcessElement::Validate(std::string sigPath, std::
   return rv;
 }
 
-#ifdef USEREFICCMAXNAMESPACE
-} //namespace refIccMAX
+#ifdef USEICCDEVNAMESPACE
+} //namespace iccDEV
 #endif

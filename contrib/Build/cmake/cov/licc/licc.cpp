@@ -1,13 +1,13 @@
 ﻿/*
 #
 # Copyright(c) 1998 - 2025 Marti Maria Saguer - scan.c
-# Copyright(c) 2003 - 2025 International Color Consortium - IccDumpProfile.cpp
-# Copyright(c) 1994 - 2025 David H Hoyt LLC - IccSignatureUtils.h - UCI Profiler
+# Copyright(c) 2003 - 2025 International Color Consortium - iccDEV Libs
+# Copyright(c) 1994 - 2025 David H Hoyt LLC - iccScan Code & IccSignatureUtils.h - UCI Profiler
 #
 #
 # Compile: g++ -I../../../../IccProfLib/     -I../../../../IccXML/IccLibXML/     -I/usr/local/include     -L/usr/local/lib     -fsanitize=address     -fno-omit-frame-pointer     -g3 -O1     -Wall -Wextra -Wpedantic     -o licc licc.c     -llcms2 -lstdc++ -lz -lm     -Wno-unused-parameter     -Wno-type-limits     -Wno-overloaded-virtual
 #
-# Last Modified: 15-MAY-2025 1830 EDT David Hoyt
+# Last Modified: 23-OCT-2025 1830 EDT David Hoyt
 # Latest: Add iccDumpProfile Output Report Section, Test
 #
 #
@@ -18,32 +18,6 @@
 #
 #
 */
-
-//---------------------------------------------------------------------------------
-//
-//  Little Color Management System
-//  Copyright (c) 1998-2015 Marti Maria Saguer
-//
-// Permission is hereby granted, free of charge, to any person obtaining
-// a copy of this software and associated documentation files (the "Software"),
-// to deal in the Software without restriction, including without limitation
-// the rights to use, copy, modify, merge, publish, distribute, sublicense,
-// and/or sell copies of the Software, and to permit persons to whom the Software
-// is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in
-// all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-// THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-// LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-// OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-// WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-//
-//---------------------------------------------------------------------------------
-//
 
 #include <cassert>
 #include <stdio.h>
@@ -1168,7 +1142,7 @@ int main(int argc, char* argv[])
     fprintf(stderr,
         "\n"
         "ICC Profile Scanner v.01 [LittleCMS %.2f, IccProfLib %s, IccLibXML %s]\n"
-        "Copyright (c) 2022-2025 David H Hoyt LLC - IccSignatureUtilities.h\n"
+        "Copyright (c) 2022-2025 David H Hoyt LLC - iccSCan Source & IccSignatureUtilities.h\n"
         "Copyright (c) 1998-2015 Marti Maria Saguer - Little CMS2 Library\n"
         "Copyright (c) 2003-2025 International Color Consortium - iccMAX Library\n"
         "\n"

@@ -1,6 +1,6 @@
-# licc | Little ICC Scanner
+# iccScan 
 
-`licc` is a mashup of [LittleCMS 2.14](https://www.littlecms.com/) and [ICC.1:2024-05 (iccMAX 2.2.25)](https://www.color.org/specification/ICC_Max.xalter), designed to demonstrate a measurement and analysis toolchain for ICC profiles.
+`iccScan` is a mashup of [LittleCMS 2.14](https://www.littlecms.com/) and [ICC.1:2024-05 (iccMAX 2.2.25)](https://www.color.org/specification/ICC_Max.xalter), designed to demonstrate a measurement and analysis toolchain for ICC profiles.
 
 ---
 
@@ -16,16 +16,39 @@
 ## 🛠 Build Instructions
 
 ```
-cd contrib/Build/cmake/cov/lic
-make -f Makefile.licc clean all AFL=0
+cd contrib/Build/cmake/cov
+bash build.sh
+cd licc
 ```
+
+### Dynamic Link
+
+```
+make -f Makefile.licc clean all AFL=0
+./licc
+```
+
+### Static Link
+
+```
+make -f Makefile.static STATIC=1 clean all
+./iccScan
+```
+
+### Beta Build
+
+```
+make -f Makefile.beta STATIC=1 clean all
+./iccScan
+```
+
 
 ### Expected Output
 
 ```
-./iccscan -v 1 ../../../../UnitTest/cve-2023-46602.icc
+./iccScan -v 1 ../../../../UnitTest/cve-2023-46602.icc
 
-l'icc Profile Scanner [LittleCMS 2.14, IccProfLib 2.3.0, IccLibXML 2.3.0]
+l'icc Profile Scanner [LittleCMS 2.17, IccProfLib 2.3.1, IccLibXML 2.3.1]
 David H Hoyt LLC  https://srd.cx/
 
 Copyright (c) 1998-2015 Marti Maria Saguer

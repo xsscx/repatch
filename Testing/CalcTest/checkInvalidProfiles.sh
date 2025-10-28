@@ -22,7 +22,7 @@
 echo "====================== Entering CalcTest/checkInvalidProfiles.sh =========================="
 
 # Properly handle newline-separated paths as a list
-find ../Build/Tools -type f -perm -111 -exec dirname {} \; | sort -u | while read -r d; do
+find ../../Build/Tools -type f -perm -111 -exec dirname {} \; | sort -u | while read -r d; do
   abs_path=$(cd "$d" && pwd)
   PATH="$abs_path:$PATH"
 done

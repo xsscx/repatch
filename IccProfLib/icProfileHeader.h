@@ -3,7 +3,7 @@
 
     Contains:   ICC profile definitions and structures 
 
-    Copyright:  (c) see ICC Software License
+    Copyright:  (c) see Software License
 
  * <b>
  * This version of the header file corresponds to the profile
@@ -1004,6 +1004,7 @@ typedef enum {
     icSigOnyxGraphics                   = 0x4f4e5958,  /* 'ONYX' */
     icSigRefIccMAX                      = 0x52494343,  /* 'RIMX' */
     icSigDemoIccMAX                     = 0x44494d58,  /* 'DIMX' */
+    icSigIccDEV                         = 0x49434344,  /* 'ICCD' */
     icSigRolfGierling                   = 0x52474d53,  /* 'RGMS' */
     icSigSampleICC                      = 0x53494343,  /* 'SICC' */
     icSigToshiba                        = 0x54434D4D,  /* 'TCMM' */

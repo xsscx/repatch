@@ -4,14 +4,13 @@
 #                                        All rights reserved.
 # 
 #
-#  Last Updated: 24-MAR-2025 1222 EDT by David Hoyt
-#  date -d @1742833338
-#  Mon Mar 24 12:22:18 EDT 2025
+#  Last Updated: 20-OCT-2025 at 2000Z by David Hoyt
 #
-# Changes:  Modified output target to fix a few subproject pathing issues
-#           Added to CMakelists.txt: IccPngDump
-#           Adjusted Cross Platform Build Args
-#						
+#
+#
+# Changes:  Restore include for icProfileHeader.h
+#           
+##
 # TODO: Refactor Debug, Release, Asan, subproject pathing issues
 #       Collapse 3-tier CMakeLists.txt, Housekeeping
 #       Refactor Base Configs & logging to .mk's 
@@ -57,6 +56,7 @@ SET( CFILES
 	${SRC_PATH}/IccProfLib/IccUtil.cpp
 	${SRC_PATH}/IccProfLib/IccXformFactory.cpp
 	${SRC_PATH}/IccProfLib/IccMD5.cpp
+	${SRC_PATH}/IccProfLib/IccCmmSearch.cpp
    )
 
 IF(ENABLE_INSTALL_RIM)
@@ -99,6 +99,10 @@ IF(ENABLE_INSTALL_RIM)
     ${SRC_PATH}/IccProfLib/IccUtil.h
     ${SRC_PATH}/IccProfLib/IccWrapper.h
     ${SRC_PATH}/IccProfLib/IccXformFactory.h
+    ${SRC_PATH}/IccProfLib/IccMD5.h
+    ${SRC_PATH}/IccProfLib/IccSignatureUtils.h
+    ${SRC_PATH}/IccProfLib/IccSearch.h
+    ${SRC_PATH}/IccProfLib/IccCmmSearch.h
     ${SRC_PATH}/IccProfLib/icProfileHeader.h
   )
   INSTALL( FILES
