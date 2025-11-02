@@ -1,8 +1,8 @@
 vcpkg_from_github(
     OUT_SOURCE_PATH SOURCE_PATH
-    REPO xsscx/PatchIccMAX
-    REF e6b7731326b3ef707c02cf71a7d07ea9238af3e6
-    SHA512 502300a984d8074eba4ecfce8e345a5a0c05f9ceff13389299450c6a4524fb48bb09c91f59cb8232c8bf475064941cfda5db033f5ce23f0e4d0736ded30bbdca
+    REPO InternationalColorConsortium/iccDEV
+    REF b4a829086a541868319d6acdee23d71fec5cf95c
+    SHA512 98f3df7d41fb75f441143b1b113228b5ff001f1494a4ef878dcc094608291f9d2393770472b08ff9563c68a9febb1c5adf5be17d8c921dea84dd8fdeddded122
 )
 
 # Make libxml2/iconv headers visible
