@@ -79,6 +79,7 @@
 #include "../IccCommon/IccCmmConfig.h"
 #include "TiffImg.h"
 #include "IccProfLibVer.h"
+#include <math.h>
 
 static icFloatNumber UnitClip(icFloatNumber v)
 {
