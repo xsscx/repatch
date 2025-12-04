@@ -44,7 +44,7 @@
 #
 #
 #
-# Run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/InternationalColorConsortium/iccDEV/refs/heads/research/contrib/HelperScripts/unix-issue-template.sh)"
+# Run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/InternationalColorConsortium/iccDEV/refs/heads/research/contrib/HelperScripts/issue280.sh)"
 #
 #
 ###############################################################
@@ -138,7 +138,7 @@ case "$os" in
         else
             echo "Homebrew not found." >&2
             echo "Install Homebrew: https://brew.sh/" >&2
-            exit 1
+            exit 0
         fi
         ;;
     Linux)

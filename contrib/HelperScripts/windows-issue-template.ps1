@@ -16,7 +16,24 @@
 #                  *** - Provide your Repoduction ***
 #                      - Include the Output
 # *** All Reports must include a known good & working reproduction ***
+# 1. Perform self-diagnosis before opening the Issue
+#    Minimum expectations:
+#    Sync to current main or release branch.
+#    Confirm local headers match implementation.
+#    Rebuild clean.
+#    Verify PR history for related code paths.
 #
+# 2. Document evidence indicating due diligence
+#    This includes:
+#    Commit hash tested.
+#    Diff showing header/implementation mismatch.
+#    Exact error trace.
+#    Confirmation whether the issue persists after resync.
+#
+# 3. Provide the corrected diagnosis once the root cause is found
+#    If the maintainer discovers the problem was self-inflicted:
+#    They must update the Issue with the corrected root cause.
+#    They must close the Issue unless there is a true upstream defect.
 #
 #
 #
@@ -24,8 +41,6 @@
 #
 #
 # iex (iwr -Uri "https://raw.githubusercontent.com/InternationalColorConsortium/iccDEV/refs/heads/research/contrib/HelperScripts/windows-issue-template.ps1").Content
-#
-#
 #
 ###############################################################
 
@@ -75,6 +90,7 @@ Write-Host "====================================================================
 Write-Host "iccDEV Issue Report ************ Please include the data below this line"
 Write-Host "========================================================================"
 Write-Host ""
+Write-Host "Setting PATH"
             $exeDirs = Get-ChildItem -Recurse -File -Include *.exe -Path .\build\ |
                 Where-Object { $_.FullName -match 'iccdev' -and $_.FullName -notmatch '\\CMakeFiles\\' -and $_.Name -notmatch '^CMake(C|CXX)CompilerId\.exe$' } |
                 ForEach-Object { Split-Path $_.FullName -Parent } |
@@ -85,46 +101,8 @@ Write-Host ""
             $env:PATH = ($toolDirs -join ';') + ';' + $env:PATH
             pwd
             cd ..\..\Testing
-            .\CreateAllProfiles.bat
-            .\RunTests.bat
-            cd CalcTest\
-            .\checkInvalidProfiles.bat
-            .\runtests.bat
-            cd ..\Display
-            .\RunProtoTests.bat
-            cd ..\HDR
-            .\mkprofiles.bat
-            cd ..\mcs\
-            .\updateprev.bat
-            .\updateprevWithBkgd.bat
-            cd ..\Overprint
-            .\RunTests.bat
-            cd ..
-            cd hybrid
-            .\BuildAndTest.bat
-            cd ..
-            cd ..
-            pwd
-            # Collect .icc profile information
-            $profiles = Get-ChildItem -Path . -Filter "*.icc" -Recurse -File
-            $totalCount = $profiles.Count
-            
-            # Group profiles by directory
-            $groupedProfiles = $profiles | Group-Object { $_.Directory.FullName }
-            
-            # Generate Summary Report
-            Write-Host "`n========================="
-            Write-Host " ICC Profile Report"
-            Write-Host "========================="
-            
-            # Print count per subdirectory
-            foreach ($group in $groupedProfiles) {
-                Write-Host ("{0}: {1} .icc profiles" -f $group.Name, $group.Count)
-            }
-            
-            Write-Host "`nTotal .icc profiles found: $totalCount"
-            Write-Host "=========================`n"
-            
+            cd CMYK-3DLUTs
+            iccFromXml CMYK-3DLUTs.xml CMYK-3DLUTs.icc
             Write-Host "All Done!"
 Write-Host ""
 Write-Host "========================================================================"
