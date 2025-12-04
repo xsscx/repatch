@@ -97,7 +97,7 @@ case "$os" in
                 libpng \
                 jpeg \
                 wxwidgets \
-                libtiff \
+                libtiff-dev \
                 curl \
                 git \
                 make \
@@ -124,7 +124,7 @@ case "$os" in
                 libwxgtk-webview3.2-dev \
                 wx-common \
                 wx3.2-headers \
-                libtiff6 \
+                libtiff-dev \
                 curl \
                 git \
                 make \

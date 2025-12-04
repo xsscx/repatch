@@ -146,7 +146,7 @@ case "$os" in
                 libpng \
                 jpeg \
                 wxwidgets \
-                libtiff \
+                libtiff-dev \
                 curl \
                 git \
                 make \
