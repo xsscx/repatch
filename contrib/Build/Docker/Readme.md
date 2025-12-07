@@ -11,11 +11,11 @@ To Run: `docker run -it ghcr.io/internationalcolorconsortium/iccdev:latest bash 
 - At login, you will see:
 
 ```
- ICCDEV RUNTIME ENVIRONMENT
+========= International Color Consortium ============
+https://color.org
+ iccDEV v2.3.1.1 Docker
 
-=================================================
 The Libraries & Tools are located in:
-
 /opt/iccdev/Build/IccProfLib/libIccProfLib2.so.2.3.1.1
 /opt/iccdev/Build/IccProfLib/libIccProfLib2-static.a
 /opt/iccdev/Build/IccXML/libIccXML2.so.2.3.1.1
@@ -35,8 +35,11 @@ The Libraries & Tools are located in:
 /opt/iccdev/Build/Tools/IccTiffDump/iccTiffDump
 
 The Testing directory contains pre-built ICC profiles
+
+Open an Issue with Comments or Feedback at URL:
+https://github.com/InternationalColorConsortium/iccDEV/issues
 =================================================
-iccdev@e3283a832e60:~$
+iccdev@f4146a0a5ace:~$
 ```
 
 ## Example Usage
