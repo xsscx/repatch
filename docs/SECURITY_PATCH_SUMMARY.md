@@ -1,23 +1,32 @@
 # Security Patch Summary - iccDEV Recent Fixes
 
 **Analysis Date:** 2025-12-20  
-**Commits Analyzed:** 2023-11 through 2025-12 (117 commits since Nov 2025)  
+**Commits Analyzed:** 2023-11 through 2025-12 (235 commits, 115 security-related)  
 **Repository:** InternationalColorConsortium/iccDEV (iccDEV)  
-**Related Analysis:** [ASAN Bug Patterns](./ASAN_BUG_PATTERNS.md)
+**Related Documentation:**
+- [ASAN Bug Patterns](./ASAN_BUG_PATTERNS.md) - AddressSanitizer findings
+- [Bug Pattern Analysis 2024-2025](./BUG_PATTERN_ANALYSIS_2024_2025.md) - Comprehensive pattern analysis
+- [Vulnerability Timeline 2023-2025](./VULNERABILITY_TIMELINE_2023_2025.md) - Chronological vulnerability tracking
+- [UB Vulnerability Patterns](./UB_VULNERABILITY_PATTERNS.md) - Undefined Behavior patterns
 
 ---
 
 ## Quick Reference
 
-| Vulnerability Class | Count | Severity | Status |
-|---------------------|-------|----------|--------|
-| Heap Buffer Overflow | 5 | Critical | Fixed |
-| NULL Pointer Dereference | 10 | High | Fixed |
-| Undefined Behavior | 78 | High | Fixed |
-| Use-After-Free | 2 | Critical | Fixed |
-| Stack Buffer Overflow | 1 | Critical | CVE |
-| Type Conversion Overflow | 3 | High | Fixed |
-| Uninitialized Memory | 4 | Medium | Fixed |
+| Vulnerability Class | Count | Severity | Status | CVE |
+|---------------------|-------|----------|--------|-----|
+| Heap Buffer Overflow | 5 | Critical | Fixed | - |
+| NULL Pointer Dereference | 10 | High | Fixed | - |
+| Undefined Behavior | 78 | High | Fixed | - |
+| Use-After-Free | 2 | Critical | Fixed | - |
+| Stack Buffer Overflow | 1 | Critical | Fixed | CVE-2023-46602 |
+| Enum Conversion UB | 1 | High | Fixed | CVE-2023-44062 |
+| Type Conversion Overflow | 3 | High | Fixed | - |
+| Uninitialized Memory | 4 | Medium | Fixed | - |
+| NaN/Infinity Handling | 3 | High | Fixed | - |
+
+**Total Security Fixes (2024-2025):** 115 commits (49% of all commits)  
+**Discovery Methods:** 53% libFuzzer, 26% UBSan, 11% ASan, 10% other
 
 ---
 
@@ -301,9 +310,91 @@ if (error) {
 
 ---
 
-## Historical Critical Patches
+## Historical Critical Patches (2023-2024)
 
-### Stack Buffer Overflow
+**Note:** The following sections provide detailed vulnerability analysis for historical CVEs. See also [Vulnerability Timeline 2023-2025](./VULNERABILITY_TIMELINE_2023_2025.md) for chronological tracking.
+
+### CVE-2023-46602: Stack Buffer Overflow (Detailed Analysis)
+**Commit:** `a9a1556`  
+**Date:** 2023-11-03  
+**Severity:** Critical  
+**Reporter:** David Hoyt (@h02332)
+
+**Vulnerability:**
+```cpp
+// IccTagXml.cpp - icFixXml() 
+char fix[256];
+char buf[256];
+for (i=0; i<m_nScriptSize; i++) {
+  sprintf(buf + i*2, "%02X", m_szScriptText[i]);  // Overflow: can write 512+ bytes
+}
+```
+
+**Fix:**
+```cpp
+// Use std::stringstream for safe string building
+std::stringstream ss;
+for (int i = 0; i < m_nScriptSize; i++) {
+  ss << std::hex << std::uppercase << std::setw(2) << std::setfill('0')
+     << static_cast<int>(static_cast<unsigned char>(m_szScriptText[i]));
+}
+```
+
+**Files:**
+- IccXML/IccLibXML/IccTagXml.cpp
+- IccProfLib/IccPrmg.cpp
+
+**Impact:** Stack-based buffer overflow leading to potential code execution
+
+---
+
+### CVE-2023-44062: Enum Conversion UB
+**Commit:** `cf2c19c`  
+**Date:** 2024-05-29  
+**Severity:** High  
+**Reporter:** David Hoyt (@h02332)
+
+**Vulnerability:**
+```cpp
+// IccUtil.cpp - Sentinel value outside enum range
+switch ((int)val) {
+  case icMaxEnumFlare:  // 0xFFFFFFFF invalid for enum [0,1]
+    return "Max Flare";
+}
+```
+
+**Compiler Error:**
+```
+error: integer value 4294967295 is outside the valid range 
+of values [0, 1] for this enumeration type [-Wenum-constexpr-conversion]
+```
+
+**Fix:**
+```cpp
+switch (val) {  // No cast
+  default:
+    if (val == icMaxEnumFlare)
+      return "Max Flare";
+    std::snprintf(m_szStr, sizeof(m_szStr), "Unknown Flare '%d'", (int)val);
+    return m_szStr;
+}
+```
+
+**Files:**
+- IccProfLib/IccUtil.cpp
+
+**Impact:** Undefined behavior from enum out-of-range values
+
+---
+
+## Historical Critical Patches (Pre-2024)
+
+### CVE-2023-46602: Stack Buffer Overflow (Duplicate Entry - See Above)
+**Note:** This entry is maintained for historical reference. See main CVE-2023-46602 section above for complete details.
+
+**Commit:** `a9a1556`  
+**Date:** 2023-11-03  
+**Severity:** Critical
 **Commit:** `a9a1556`  
 **Date:** 2023-11-03  
 **Severity:** Critical
@@ -431,11 +522,17 @@ For each new patch:
 
 - [iccDEV Repository](https://github.com/InternationalColorConsortium/iccDEV)
 - [ICC Specification](https://www.color.org/specification/ICC.2-2025.pdf)
-- [CVE-2023-46602](https://nvd.nist.gov/vuln/detail/CVE-2023-46602)
-- [ASAN Bug Pattern Analysis](./ASAN_BUG_PATTERNS.md) - Detailed analysis of AddressSanitizer findings
-- [UB Vulnerability Patterns](./UB_VULNERABILITY_PATTERNS.md) - Undefined Behavior classification
+- **CVEs:**
+  - [CVE-2023-46602](https://nvd.nist.gov/vuln/detail/CVE-2023-46602) - Stack buffer overflow
+  - [CVE-2023-44062](https://nvd.nist.gov/vuln/detail/CVE-2023-44062) - Enum conversion UB
+- **Analysis Documents:**
+  - [ASAN Bug Pattern Analysis](./ASAN_BUG_PATTERNS.md) - Detailed AddressSanitizer findings (6 bug classes)
+  - [Bug Pattern Analysis 2024-2025](./BUG_PATTERN_ANALYSIS_2024_2025.md) - Comprehensive 2-year analysis (235 commits)
+  - [Vulnerability Timeline 2023-2025](./VULNERABILITY_TIMELINE_2023_2025.md) - Chronological CVE tracking (19 vulnerabilities)
+  - [UB Vulnerability Patterns](./UB_VULNERABILITY_PATTERNS.md) - Undefined Behavior classification (78 UB fixes)
 
 ---
 
 **Last Updated:** 2025-12-20  
-**Document Version:** 1.1
+**Document Version:** 1.2  
+**Contributors:** Chris Cox, David Hoyt, ICC Development Team
