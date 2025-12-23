@@ -1,5 +1,8 @@
 # iccDEV libFuzzer Image
 
+Source: [Dockerfile](https://raw.githubusercontent.com/InternationalColorConsortium/iccDEV/refs/heads/research/contrib/Build/Docker/Dockerfile.libfuzzer2)
+
+Build: `docker buildx build --platform linux/amd64  --load -t fuzz82:container -f .\Dockerfile.libfuzzer2 .`
 ```
 docker pull ghcr.io/internationalcolorconsortium/iccdev:libfuzzer
 docker run --rm -it ghcr.io/internationalcolorconsortium/iccdev:libfuzzer
