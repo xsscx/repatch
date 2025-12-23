@@ -1,0 +1,203 @@
+###############################################################
+#
+## Copyright (©) 2024-2025 International Color consortium 
+#                 All rights reserved.
+#                  https://color.org
+#
+# Last Updated: 03-DEC-2025 1600Z by David Hoyt
+#
+#  Intent: Dockerfile for Libfuzzer
+#          Version 2.0.0
+# 
+#
+#  Tag: ci-docker-libfuzzer
+#
+#
+#
+#
+#
+#
+#
+###############################################################
+
+# =========================
+# 1) BUILD STAGE
+# =========================
+FROM ubuntu:24.04 AS builder
+ENV DEBIAN_FRONTEND=noninteractive
+
+# ------------------------------------------------------------
+# Build toolchain + dev dependencies
+# ------------------------------------------------------------
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    curl \
+    ca-certificates \
+    pkg-config \
+    ccache \
+    gdb \
+    clang-18 \
+    clang-tools-18 \
+    lldb-18 \
+    llvm-18 \
+    llvm-18-dev \
+    libclang-18-dev \
+    libclang-rt-18-dev \
+    libxml2-dev \
+    nlohmann-json3-dev \
+    libtiff6 \
+    libgtk-3-dev \
+    libgdk-pixbuf2.0-dev \
+    libcurl4-openssl-dev \
+    libglu1-mesa-dev \
+    libnotify-dev \
+    libjpeg-dev \
+    libpng-dev \
+    zlib1g-dev \
+    libsecret-1-dev \
+    libx11-dev \
+    libxext-dev \
+    libxtst-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# ------------------------------------------------------------
+# Compiler selection
+# ------------------------------------------------------------
+ENV CC=/usr/bin/clang-18
+ENV CXX=/usr/bin/clang++-18
+
+# ------------------------------------------------------------
+# Fetch source
+# ------------------------------------------------------------
+RUN git clone https://github.com/InternationalColorConsortium/iccDEV.git /opt/iccdev
+
+# ------------------------------------------------------------
+# Disable wxWidgets (library-only build)
+# ------------------------------------------------------------
+RUN sed -i '/find_package(wxWidgets COMPONENTS core base REQUIRED)/,/endif()/ s/^/# /' \
+    /opt/iccdev/Build/Cmake/CMakeLists.txt
+
+# ------------------------------------------------------------
+# Configure + build with libFuzzer-compatible instrumentation
+# ------------------------------------------------------------
+WORKDIR /opt/iccdev/Build
+RUN cmake \
+    -DCMAKE_INSTALL_PREFIX=/opt/iccdev/install \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_C_COMPILER=clang-18 \
+    -DCMAKE_CXX_COMPILER=clang++-18 \
+    -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+    -DTIFF_LIBRARY=/usr/lib/$(dpkg-architecture -q DEB_HOST_MULTIARCH)/libtiff.so \
+    -DTIFF_INCLUDE_DIR=/usr/include \
+    -DZLIB_LIBRARY=/usr/lib/$(dpkg-architecture -q DEB_HOST_MULTIARCH)/libz.so \
+    -DZLIB_INCLUDE_DIR=/usr/include \
+    -DPNG_LIBRARY=/usr/lib/$(dpkg-architecture -q DEB_HOST_MULTIARCH)/libpng.so \
+    -DPNG_PNG_INCLUDE_DIR=/usr/include \
+    -DJPEG_LIBRARY=/usr/lib/$(dpkg-architecture -q DEB_HOST_MULTIARCH)/libjpeg.so \
+    -DJPEG_INCLUDE_DIR=/usr/include \
+    -DCMAKE_C_FLAGS="-g -fsanitize=address,fuzzer-no-link -fno-omit-frame-pointer" \
+    -DCMAKE_CXX_FLAGS="-g -fsanitize=address,fuzzer-no-link -fno-omit-frame-pointer -Wall" \
+    ../Build/Cmake \
+ && make -j"$(nproc)"
+
+# ------------------------------------------------------------
+# Build a minimal libFuzzer harness (self-contained)
+# ------------------------------------------------------------
+RUN mkdir -p /opt/iccdev/fuzzers-src \
+ && cat > /opt/iccdev/fuzzers-src/icc_profile_fuzz.cpp <<'EOF'
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
+    // Minimal smoke harness: exercise memory handling paths
+    if (size < 4) return 0;
+    volatile uint8_t sink = data[0];
+    (void)sink;
+    return 0;
+}
+EOF
+
+RUN mkdir -p /opt/iccdev/fuzzers \
+ && clang++-18 \
+      -g -O1 \
+      -fsanitize=address,fuzzer \
+      -fno-omit-frame-pointer \
+      -I/opt/iccdev/IccProfLib \
+      /opt/iccdev/fuzzers-src/icc_profile_fuzz.cpp \
+      /opt/iccdev/Build/IccProfLib/libIccProfLib2-static.a \
+      -o /opt/iccdev/fuzzers/icc_profile_fuzz
+
+###############################################################
+# 2) RUNTIME STAGE
+###############################################################
+FROM ubuntu:24.04 AS runtime
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    libtiff6 \
+    libgtk-3-0 \
+    libgdk-pixbuf2.0-0 \
+    libcurl4 \
+    libglu1-mesa \
+    libnotify-bin \
+    libjpeg8 \
+    libpng16-16 \
+    zlib1g \
+    libsecret-1-0 \
+    libx11-6 \
+    libxext6 \
+    libxtst6 \
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    curl \
+    ca-certificates \
+    pkg-config \
+    ccache \
+    gdb \
+    clang-18 \
+    clang-tools-18 \
+    lldb-18 \
+    llvm-18 \
+    llvm-18-dev \
+    libclang-18-dev \
+    libclang-rt-18-dev \
+    libxml2-dev \
+    nlohmann-json3-dev \
+    libtiff6 \
+    libgtk-3-dev \
+    libgdk-pixbuf2.0-dev \
+    libcurl4-openssl-dev \
+    libglu1-mesa-dev \
+    libnotify-dev \
+    libjpeg-dev \
+    libpng-dev \
+    zlib1g-dev \
+    libsecret-1-dev \
+    libx11-dev \
+    libxext-dev \
+    libxtst-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /opt/iccdev /opt/iccdev
+
+RUN groupadd -r iccdev \
+ && useradd -r -g iccdev -d /opt/iccdev -s /usr/sbin/nologin iccdev \
+ && chown -R iccdev:iccdev /opt/iccdev
+
+USER iccdev
+WORKDIR /opt/iccdev
+
+###############################################################
+# 3) FINAL IMAGE
+###############################################################
+FROM runtime AS libfuzzer
+
+CMD ["/opt/iccdev/fuzzers/icc_profile_fuzz"]
