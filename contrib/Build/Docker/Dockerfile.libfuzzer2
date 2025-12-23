@@ -13,11 +13,10 @@
 #  Tag: ci-docker-libfuzzer
 #
 #
+# Build: docker buildx build --platform linux/amd64 \  
+#         --load -t libfuzzer:container -f .\Dockerfile.libfuzzer2 .
 #
-#
-#
-#
-#
+# Run: docker run --rm -it libfuzzer:container
 ###############################################################
 
 # =========================
