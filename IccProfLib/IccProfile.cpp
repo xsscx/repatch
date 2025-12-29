@@ -74,6 +74,9 @@
 #include <ctime>
 #include <cstring>
 #include <cmath>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
 #include "IccProfile.h"
 #include "IccTag.h"
 #include "IccArrayBasic.h"
@@ -337,13 +340,20 @@ IccTagEntry* CIccProfile::GetTag(icSignature sig, const CIccProfile *pParentProf
  */
 bool CIccProfile::AreTagsUnique() const
 {
-  TagEntryList::const_iterator i, j;
-
-  for (i=m_Tags.begin(); i!=m_Tags.end(); i++) {
-    j=i;
-    for (j++; j!= m_Tags.end(); j++) {
-      if (i->TagInfo.sig == j->TagInfo.sig)
-        return false;
+  typedef std::unordered_map<icTagSignature,int> tag_lookup_map;
+  tag_lookup_map tag_lookup;
+  
+  int n;
+  TagEntryList::const_iterator i;
+  
+  for (n=0, i = m_Tags.begin(); i != m_Tags.end(); ++i, n++) {
+    // check for a previous tag with the same sig/type
+    tag_lookup_map::const_iterator found = tag_lookup.find(i->TagInfo.sig);
+    if ( found != tag_lookup.end() ) {
+      return false;
+    } else {
+      // else this is the first of this type seen, so insert it into our list
+      tag_lookup[i->TagInfo.sig] = n;
     }
   }
 
@@ -385,7 +395,8 @@ IccTagEntry* CIccProfile::GetTag(CIccTag *pTag) const
  * Purpose: Finds the tag object associated with the directory entry with the
  *  given signature.  If the profile object is attached to an IO object then
  *  the tag may need to be loaded first.
- * 
+ *  This has to do a search of the tag list, and may be slow.
+ *
  * Args: 
  *  sig - tag signature to find in profile
  * 
@@ -397,16 +408,35 @@ IccTagEntry* CIccProfile::GetTag(CIccTag *pTag) const
 CIccTag* CIccProfile::FindTag(icSignature sig)
 {
   IccTagEntry *pEntry = GetTag(sig);
-
-  if (pEntry) {
-    if (!pEntry->pTag && m_pAttachIO)
-      LoadTag(pEntry, m_pAttachIO);
-    return pEntry->pTag;
-  }
-
-  return NULL;
+  if (pEntry)
+    return FindTag( *pEntry );
+  else
+    return NULL;
 }
 
+
+/**
+ ******************************************************************************
+ * Name: CIccProfile::FindTag
+ * 
+ * Purpose: Return the tag object associated with the directory entry given,
+ *  and load if the profile object is attached to an IO object.
+ *  This is faster when iterating tags, to avoid O(N^2) behavior.
+ *
+ * Args: 
+ *  entry - IccTagEntry for this tag
+ *
+ * Return: 
+ *  The desired tag object, or NULL if unable to load the tag object.
+ *
+ *******************************************************************************
+ */
+CIccTag* CIccProfile::FindTag(IccTagEntry &entry)
+{
+  if (!entry.pTag && m_pAttachIO)
+    LoadTag(&entry, m_pAttachIO);
+  return entry.pTag;
+}
 
 /**
  ******************************************************************************
