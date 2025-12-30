@@ -225,7 +225,7 @@ for d in ../Build/Tools/*; do
     [ -n "$abs" ] && export PATH="$abs:$PATH"
   fi
 done
-
+          sh CreateAllProfiles.sh
 ############################################################
 # "========= INSERT YOUR REPRODUCTION BELOW HERE ========="#
 ############################################################
@@ -238,7 +238,6 @@ echo ""
 set +e
 echo ""
 echo "========= Start CreateAllProfiles.sh ========="
-          sh CreateAllProfiles.sh
           cd SpecRef
           iccToXml srgbRef.icc srgbRef-icc.xml
 rp_rc=$?
