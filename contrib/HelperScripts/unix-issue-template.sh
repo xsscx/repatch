@@ -260,15 +260,14 @@ echo ""
 
 set +e
 echo ""
-echo "========= Start Leaking... ========="
-cd CMYK-3DLUTs
-iccFromXml CMYK-3DLUTs.xml CMYK-3DLUTs.icc
+echo "========= Start CreateAllProfiles.sh ========="
+          sh CreateAllProfiles.sh
 rp_rc=$?
 cd ..
 
 set -e
 
-echo "========= Stop Leaking... =========="
+echo "========= Stop CreateAllProfiles.sh =========="
 echo ""
 status "Reproduction Block" "$rp_rc"     ### STATUS ADDED
 echo ""
