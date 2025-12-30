@@ -237,7 +237,7 @@ echo ""
 
 set +e
 echo ""
-echo "========= Start CreateAllProfiles.sh ========="
+echo "========= Start Issue 389 Repro ========="
           cd Calc
           iccToXml srgbCalc++Test.icc srgbCalc++Test-xml-icc-xml.xml
 rp_rc=$?
@@ -245,7 +245,7 @@ cd ..
 
 set -e
 
-echo "========= Stop CreateAllProfiles.sh =========="
+echo "========= Stop Issue 388 Repro =========="
 echo ""
 status "Reproduction Block" "$rp_rc"     ### STATUS ADDED
 echo ""
