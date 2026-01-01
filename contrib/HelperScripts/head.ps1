@@ -4,7 +4,7 @@
 ##                 All rights reserved.
 ##                 https://color.org
 #
-# Last Modified: 09-DEC-2025 2300Z by David Hoyt
+# Last Modified: 01-JAN-2026 2200Z by David Hoyt
 # Intent: Windows Issue Template
 #
 # Instructions: Please run this pwsh to build from head
@@ -17,8 +17,8 @@
 #
 ###############################################################
 
-Write-Host "============================= Starting Windows PR304 Build =============================" -ForegroundColor Green
-Write-Host "Last Updated: 09-DEC-2025 0200Z by David H Hoyt LLC" -ForegroundColor Green
+Write-Host "============================= Starting Windows Build at HEAD =============================" -ForegroundColor Green
+Write-Host "Last Updated: 01-JAN-2026 2200Z by David H Hoyt LLC" -ForegroundColor Green
 
 git clone https://github.com/InternationalColorConsortium/iccDEV.git
 cd iccDEV
