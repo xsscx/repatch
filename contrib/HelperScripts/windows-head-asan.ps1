@@ -17,22 +17,24 @@
 #
 ###############################################################
 
-Write-Host "============================= Starting Windows Build at HEAD =============================" -ForegroundColor Green
+Write-Host "============================= Starting Windows ASAN Build at HEAD =============================" -ForegroundColor Green
 Write-Host "Last Updated: 01-JAN-2026 2200Z by David H Hoyt LLC" -ForegroundColor Green
 
-git clone https://github.com/InternationalColorConsortium/iccDEV.git
-cd iccDEV
-          git branch
-          git status
-          Write-Host "========= Fetching Deps... ================`n"
+          Write-Host "========= Cloning iccDEV... ================`n"  
+          git clone https://github.com/InternationalColorConsortium/iccDEV.git
+          cd iccDEV
+          Write-Host "========= Fetching Deps... ================`n"  
           Start-BitsTransfer -Source "https://github.com/InternationalColorConsortium/iccDEV/releases/download/v2.3.1/vcpkg-exported-deps.zip" -Destination "deps.zip"
-          Write-Host "========= Extracting Deps... ================`n"
+          Write-Host "========= Extracting Deps... ================`n" 
           tar -xf deps.zip
           cd Build/Cmake
-          Write-Host "========= Building... ================`n"  
-          cmake -T ClangCL -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE="..\..\scripts\buildsystems\vcpkg.cmake" -DVCPKG_MANIFEST_MODE=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS="/MD /Zi /fsanitize=address" -DCMAKE_CXX_FLAGS="/MD /Zi /fsanitize=address" -DCMAKE_EXE_LINKER_FLAGS_INIT="/DEBUG:FULL /INCREMENTAL:NO" -DCMAKE_SHARED_LINKER_FLAGS_INIT="/DEBUG:FULL /INCREMENTAL:NO" -Wno-dev
+          Write-Host "========= Configuring for Asan... ================`n"  
+          cmake -Wno-dev -T ClangCL -S . -B build -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE="..\..\scripts\buildsystems\vcpkg.cmake" -DVCPKG_MANIFEST_MODE=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_COMPILE_FEATURES="" -DCMAKE_C_COMPILE_FEATURES=""
+          Write-Host "========= Building Asan... ================`n" 
           cmake --build build -- /m /maxcpucount
-          cmake --build build -- /m /maxcpucount   
+          cmake --build build -- /m /maxcpucount
+          Write-Host "========= Build Done... ================`n"
+          Write-Host "========= Updating PATH ================`n"     
           $exeDirs = Get-ChildItem -Recurse -File -Include *.exe -Path .\build\ |
               Where-Object { $_.FullName -match 'icc' -and $_.FullName -notmatch '\\CMakeFiles\\' -and $_.Name -notmatch '^CMake(C|CXX)CompilerId\.exe$' } |
               ForEach-Object { Split-Path $_.FullName -Parent } |
@@ -43,6 +45,7 @@ cd iccDEV
           $env:PATH = ($toolDirs -join ';') + ';' + $env:PATH
           $env:PATH -split ';'
           pwd
+          Write-Host "========= Creating Profiles ================`n" 
           cd ..\..\Testing
           .\CreateAllProfiles.bat
           .\RunTests.bat
