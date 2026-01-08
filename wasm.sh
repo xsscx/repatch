@@ -5,10 +5,10 @@
 #                                        All rights reserved.
 #
 #
-#  Last Updated: 22-NOV-2025 1500Z by David Hoyt
+#  Last Updated: 08-JAN-2026 1600Z by David Hoyt
 #
 #
-#  INTENT: Bump PNG Version String
+#  INTENT: Bump Version String, update branch
 #
 #  Testing: Verified Working on Ubuntu24, XNU TODO
 #  Issues:  The WASM Build exposed LIB Linking issues TODO via PR on master
@@ -39,7 +39,7 @@ source ./emsdk_env.sh
 rm -rf iccDEV
 git clone https://github.com/InternationalColorConsortium/iccDEV.git
 cd iccDEV
-git checkout wasm
+git checkout wasm-v2312
 
 # === Third-Party Dependencies ===
 mkdir -p Build/third_party && cd Build/third_party
