@@ -1,13 +1,78 @@
-###############################################################################
-# Copyright (c) International Color Consortium - place in trusted base branch
+#!/usr/bin/env bash
+#------------------------------------------------------------------------------
+# @file
+# File:       sanitize-sed.sh
 #
-# Last Updated:  16-DEC-2025-2025 1400Z by David Hoyt
+# Contains:   Implementation of sanitizer for BASH Shell.
 #
-# Intent:sanitize.sh
+# Version:    V1
+#
+# Copyright:  (c) see Software License
+#------------------------------------------------------------------------------
+#
+# Copyright (c) International Color Consortium.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in
+#    the documentation and/or other materials provided with the
+#    distribution.
+#
+# 3. In the absence of prior written permission, the names "ICC" and "The
+#    International Color Consortium" must not be used to imply that the
+#    ICC organization endorses or promotes products derived from this
+#    software.
+#
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESSED OR IMPLIED
+# WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+# OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE INTERNATIONAL COLOR CONSORTIUM OR
+# ITS CONTRIBUTING MEMBERS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+# OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+# ====================================================================
+#
+# This software consists of voluntary contributions made by many
+# individuals on behalf of the International Color Consortium.
+#
+# Membership in the ICC is encouraged when this software is used for
+# commercial purposes.
+#
+# For more information on The International Color Consortium, please
+# see http://www.color.org/.
+#------------------------------------------------------------------------------
+
+###############################################################
+# Copyright (©) 2024-2025 David H Hoyt. All rights reserved.
+###############################################################
+#                 https://srd.cx
+#
+# Last Updated: 02-JAN-2026 2100Z by David Hoyt
+#
+# Intent: Try Sanitizing User Controllable Inputs
+#
+# File: .github/scripts/sanitize-sed.sh
+# 
+#
+# Comment: Sanitizing User Controllable Input 
+#          - is a Moving Target
+#          - needs ongoing updates
+#          - needs additional unit tests
 #
 #
 #
-###############################################################################
+###############################################################
 
 # --- Configuration ---
 # Maximum lengths
@@ -111,7 +176,8 @@ sanitize_print() {
   s="$(_strip_ctrl_keep_newlines "$input")"
   # Normalize different newline sequences to LF (already removed CR).
   # Collapse runs of more than 3 newlines to 3 to prevent giant junk.
-  s="$(printf '%s' "$s" | perl -pe 's/\n{4,}/\n\n\n/g')"
+  # Use sed to operate on the whole buffer (single-line command).
+  s="$(printf '%s' "$s" | sed -E ':a;N;$!ba;s/\n{4,}/\n\n\n/g')"
   s="$(escape_html "$s")"
   s="$(_truncate "$s" "$SANITIZE_PRINT_MAXLEN")"
   printf '%s' "$s"
@@ -168,4 +234,4 @@ sanitizer_version() {
   printf 'iccDEV-sanitizer-v1\n'
 }
 
-# End of sanitize.sh
+# End of sanitize-sed.sh

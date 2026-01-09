@@ -1,0 +1,152 @@
+name: ClusterFuzzLite Continuous Fuzzing
+
+# LLMCJF Integration: strict-engineering mode
+# Host: W5-2465X 32-core with RAID-1 NVMe SSD
+# Configuration: .llmcjf-config.yaml
+# Profiles: llmcjf/profiles/
+
+on:
+  pull_request:
+    paths:
+      - 'IccProfLib/**'
+      - 'IccXML/**'
+      - 'Tools/**'
+      - 'fuzzers/**'
+      - '.clusterfuzzlite/**'
+  workflow_dispatch:
+    inputs:
+      no-cache:
+        description: 'Disable build cache (force rebuild)'
+        required: false
+        default: false
+        type: boolean
+      fuzz-seconds:
+        description: 'Fuzzing duration in seconds (default: 7200 = 2h, max: 14400 = 4h)'
+        required: false
+        default: 7200
+        type: number
+  schedule:
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  fuzzing:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        sanitizer: [address, undefined, memory]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      - name: Cache Fuzzing Corpus
+        uses: actions/cache@v4
+        with:
+          path: |
+            .clusterfuzzlite/corpus
+            build/corpus
+            out/*/corpus
+          key: corpus-${{ matrix.sanitizer }}-${{ github.run_id }}
+          restore-keys: |
+            corpus-${{ matrix.sanitizer }}-
+            corpus-
+
+      - name: Sanitize Workflow Inputs
+        id: sanitize
+        run: |
+          source .github/scripts/sanitize-sed.sh
+          # Extract numeric value only for fuzz-seconds, default to 7200 (2 hours)
+          RAW_FUZZ="${{ github.event.inputs.fuzz-seconds || 7200 }}"
+          FUZZ_SECONDS=$(echo "$RAW_FUZZ" | tr -cd '0-9' | head -c 10)
+          FUZZ_SECONDS=${FUZZ_SECONDS:-7200}
+          # Validate range (1-14400 seconds = 4 hours max for W5-2465X optimization)
+          if [ "$FUZZ_SECONDS" -lt 1 ]; then FUZZ_SECONDS=1; fi
+          if [ "$FUZZ_SECONDS" -gt 14400 ]; then FUZZ_SECONDS=14400; fi
+          # Sanitize boolean
+          NO_CACHE=$(sanitize_line "${{ github.event.inputs.no-cache || false }}")
+          echo "fuzz-seconds=$FUZZ_SECONDS" >> $GITHUB_OUTPUT
+          echo "no-cache=$NO_CACHE" >> $GITHUB_OUTPUT
+          echo "Sanitized fuzz-seconds: $FUZZ_SECONDS (from: $RAW_FUZZ)"
+          echo "Sanitized no-cache: $NO_CACHE"
+        shell: bash
+
+      - name: Clear Docker build cache
+        if: steps.sanitize.outputs.no-cache == 'true' || github.event_name == 'pull_request'
+        run: |
+          echo "Clearing Docker build cache..."
+          docker system prune -af --volumes || true
+          docker builder prune -af || true
+          echo "Docker cache cleared"
+
+      - name: Build Fuzzers (${{ matrix.sanitizer }})
+        id: build
+        uses: google/clusterfuzzlite/actions/build_fuzzers@v1
+        with:
+          sanitizer: ${{ matrix.sanitizer }}
+          language: c++
+          upload-build: true
+          bad-build-check: ${{ github.event.inputs.no-cache == 'true' && 'false' || 'true' }}
+
+      - name: Run Fuzzers (${{ matrix.sanitizer }})
+        id: run
+        uses: google/clusterfuzzlite/actions/run_fuzzers@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          fuzz-seconds: ${{ steps.sanitize.outputs.fuzz-seconds }}
+          mode: 'code-change'
+          sanitizer: ${{ matrix.sanitizer }}
+      
+      - name: Preserve Crash Artifacts
+        if: always()
+        run: |
+          echo "Searching for crash/leak/oom artifacts..."
+          mkdir -p ${{ github.workspace }}/fuzzing-artifacts/${{ matrix.sanitizer }}
+          
+          # ClusterFuzzLite typically uses /tmp/tmp* directories
+          # Search common fuzzer artifact locations
+          for dir in /tmp/tmp* /tmp/cifuzz* ${{ github.workspace }}/out ${{ github.workspace }}/build-out; do
+            if [ -d "$dir" ]; then
+              echo "Searching in $dir..."
+              find "$dir" -type f \( -name "crash-*" -o -name "leak-*" -o -name "oom-*" -o -name "timeout-*" \) 2>/dev/null | while read file; do
+                basename_file=$(basename "$file")
+                echo "Found: $file"
+                cp "$file" "${{ github.workspace }}/fuzzing-artifacts/${{ matrix.sanitizer }}/$basename_file" 2>/dev/null || true
+              done
+            fi
+          done
+          
+          # Also check for reproducer scripts
+          find /tmp -type f -name "reproducer_*" 2>/dev/null | while read file; do
+            cp "$file" "${{ github.workspace }}/fuzzing-artifacts/${{ matrix.sanitizer }}/" 2>/dev/null || true
+          done
+          
+          # Count and display findings
+          artifact_count=$(find ${{ github.workspace }}/fuzzing-artifacts/${{ matrix.sanitizer }}/ -type f 2>/dev/null | wc -l)
+          echo "Total artifacts preserved: $artifact_count"
+          
+          if [ "$artifact_count" -gt 0 ]; then
+            echo "Artifact details:"
+            ls -lh ${{ github.workspace }}/fuzzing-artifacts/${{ matrix.sanitizer }}/
+            
+            # Generate SHA256 checksums
+            cd ${{ github.workspace }}/fuzzing-artifacts/${{ matrix.sanitizer }}/
+            sha256sum * > checksums.txt 2>/dev/null || true
+          else
+            echo "No crash artifacts found (clean fuzzing run)"
+          fi
+      
+      - name: Upload Crash Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzzing-crashes-${{ matrix.sanitizer }}-${{ github.sha }}
+          path: ${{ github.workspace }}/fuzzing-artifacts/${{ matrix.sanitizer }}/
+          if-no-files-found: ignore
+          retention-days: 90
