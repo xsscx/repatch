@@ -1,0 +1,88 @@
+# Dockerfile for iccDEV with Fil-C Memory Safety
+# ===============================================
+#
+# This Dockerfile builds all 14 iccDEV ICC color management tools
+# with Fil-C memory safety (garbage collection, bounds checking, etc.)
+#
+# PREREQUISITES: Build Fil-C and dependencies on HOST first:
+#   cd /home/xss/fil-c
+#   ./build_all_fast.sh
+#   ./build_zlib.sh
+#   ./build_icu.sh
+#   ./build_libxml2.sh
+#   ./build_libpng.sh
+#   ./build_jpeg-turbo.sh
+#   ./build_tiff.sh
+#
+# Build from parent directory:
+#   cd /home/xss/fil-c
+#   docker build -f iccDEV/Dockerfile -t iccdev-filc .
+#
+# Run:   docker run -it iccdev-filc
+# Test:  docker run --rm iccdev-filc /opt/fil-c/iccDEV/test_filc_build.sh
+# 
+# Based on: fil-c-build (Ubuntu 25.04)
+# Fil-C Version: 0.677
+# iccDEV Version: 2.3.1.2
+#
+# Tested: David Hoyt on 14-JAN-2026
+#
+# docker run --rm iccdev-filc /opt/fil-c/build/bin/fil++ -v
+# Fil-C 0.677 clang version 20.1.8 (https://github.com/pizlonator/fil-c.git 87d2d2e4cb53ea11796afc9976640fe5cd3435ef)
+#
+# docker run --rm iccdev-filc /opt/fil-c/iccDEV/Build/Tools/IccDumpProfile/iccDumpProfile
+# Usage: iccDumpProfile {-v} {int} profile {tagId to dump/"ALL"}
+#
+#########################################################################################
+
+FROM fil-c-build
+
+# Copy Fil-C compiler and libraries (pre-built on host)
+COPY build /opt/fil-c/build
+COPY pizfix /opt/fil-c/pizfix
+
+# Copy iccDEV source and build scripts
+COPY iccDEV /opt/fil-c/iccDEV
+
+# Install nlohmann_json header
+WORKDIR /opt/fil-c
+RUN mkdir -p pizfix/include/nlohmann && \
+    curl -L https://github.com/nlohmann/json/releases/download/v3.11.3/json.hpp \
+    -o pizfix/include/nlohmann/json.hpp && \
+    mkdir -p pizfix/lib/cmake/nlohmann_json && \
+    echo 'if(NOT TARGET nlohmann_json::nlohmann_json)' > pizfix/lib/cmake/nlohmann_json/nlohmann_jsonConfig.cmake && \
+    echo '  add_library(nlohmann_json::nlohmann_json INTERFACE IMPORTED)' >> pizfix/lib/cmake/nlohmann_json/nlohmann_jsonConfig.cmake && \
+    echo '  set_target_properties(nlohmann_json::nlohmann_json PROPERTIES' >> pizfix/lib/cmake/nlohmann_json/nlohmann_jsonConfig.cmake && \
+    echo '    INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_CURRENT_LIST_DIR}/../../../include")' >> pizfix/lib/cmake/nlohmann_json/nlohmann_jsonConfig.cmake && \
+    echo 'endif()' >> pizfix/lib/cmake/nlohmann_json/nlohmann_jsonConfig.cmake
+
+# Build iccDEV with Fil-C
+WORKDIR /opt/fil-c/iccDEV
+RUN ./build_with_filc.sh release
+
+# Note: Skipping test_filc_build.sh - iccJpegDump requires libjpeg-turbo
+# Run tests with: docker run --rm iccdev-filc /opt/fil-c/iccDEV/test_filc_build.sh
+
+# Set up environment for runtime
+ENV PATH="/opt/fil-c/iccDEV/Build/Tools:${PATH}"
+ENV LD_LIBRARY_PATH="/opt/fil-c/iccDEV/Build/IccProfLib:/opt/fil-c/iccDEV/Build/IccXML:/opt/fil-c/pizfix/lib:${LD_LIBRARY_PATH}"
+
+# Create convenience wrapper script
+RUN echo '#!/bin/bash' > /usr/local/bin/icc-tools && \
+    echo 'echo "iccDEV Fil-C Memory-Safe ICC Tools"' >> /usr/local/bin/icc-tools && \
+    echo 'echo "=================================="' >> /usr/local/bin/icc-tools && \
+    echo 'echo ""' >> /usr/local/bin/icc-tools && \
+    echo 'echo "Available tools:"' >> /usr/local/bin/icc-tools && \
+    echo 'ls /opt/fil-c/iccDEV/Build/Tools/*/icc* 2>/dev/null | xargs -n1 basename | sort' >> /usr/local/bin/icc-tools && \
+    echo 'echo ""' >> /usr/local/bin/icc-tools && \
+    echo 'echo "Example: iccDumpProfile /path/to/profile.icc"' >> /usr/local/bin/icc-tools && \
+    chmod +x /usr/local/bin/icc-tools
+
+# Default command
+CMD ["/bin/bash", "-c", "icc-tools && /bin/bash"]
+
+# Labels
+LABEL maintainer="Fil-C Build"
+LABEL description="iccDEV ICC color management tools with Fil-C memory safety"
+LABEL version="2.3.1.2-filc"
+LABEL fil-c-version="0.677"

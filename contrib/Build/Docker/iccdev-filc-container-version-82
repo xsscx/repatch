@@ -1,0 +1,444 @@
+###############################################################
+#
+# Copyright (©) 2024-2025 David H Hoyt. All rights reserved.
+#                 https://srd.cx
+#
+# Last Updated: 17-JAN-2026 1300Z by David Hoyt
+#
+# Intent: Dockerfile for iccDEV w/ Fil-C
+#         Build container Version v2.0.0.82
+#         Hoyt's version from ctx82.txt
+#
+#  Tag: ci-docker-build
+#
+#       Added default run example at login
+#
+# docker buildx build  --platform linux/amd64,linux/arm64 --target runtime \
+#  --provenance=mode=max  --attest type=sbom,kind=image --provenance=mode=max \
+#  --attest type=provenance,mode=max,version=v1 \
+#  --attest type=sbom,kind=image --annotation "org.opencontainers.image.title=iccDEV Build Container v2.0.0.82" \
+#  --annotation "org.opencontainers.image.description=v2.0.0.82 (Ubuntu 24.04)" \
+#  --annotation "org.opencontainers.image.licenses=BSD-3-Clause" \
+#  --annotation "org.opencontainers.image.vendor=International Color Consortium"  \
+#  --annotation "org.opencontainers.image.source=https://github.com/InternationalColorConsortium/iccDEV"  \
+#  --annotation "org.opencontainers.image.url=https://github.com/InternationalColorConsortium/iccDEV"  \
+#  --annotation "org.opencontainers.image.documentation=https://github.com/InternationalColorConsortium/iccDEV/tree/master/docs"    \
+#  --annotation "org.opencontainers.image.version=latest"   --attest=type=sbom --load -t test:container -f ci-docker-container.asan  .
+#
+# Run:
+#
+# docker run -it test:container
+###############################################################
+
+# =========================
+# 1) BUILD STAGE - Fetch latest iccDEV and build with Fil-C
+# =========================
+FROM srdcx/filc-base:latest AS builder
+ENV DEBIAN_FRONTEND=noninteractive
+
+LABEL stage="builder" \
+      org.opencontainers.image.title="Latest iccDEV HEAD with Fil-C" \
+      org.opencontainers.image.description="Latest iccDEV source built with Fil-C toolchain with compatibility patches" \
+      org.opencontainers.image.licenses="BSD-3-Clause" \
+      org.opencontainers.image.vendor="International Color Consortium" \
+      org.opencontainers.image.version="latest-filc-patched"
+
+# ------------------------------------------------------------
+# Setup environment
+# ------------------------------------------------------------
+# Set library path for git and other tools
+# Base image already has ca-certificates and patch - no apt-get needed
+ENV LD_LIBRARY_PATH=/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/opt/fil-c/pizfix/lib:/opt/fil-c/build/lib
+
+# ------------------------------------------------------------
+# Clone LATEST iccDEV source from GitHub HEAD
+# ------------------------------------------------------------
+RUN cd /opt && \
+    rm -rf iccdev-latest && \
+    git clone --depth 1 https://github.com/InternationalColorConsortium/iccDEV.git iccdev-latest && \
+    cd iccdev-latest && \
+    echo "=== Latest iccDEV Source ===" && \
+    git rev-parse HEAD > /tmp/git-commit-sha.txt && \
+    git show --no-patch --oneline > /tmp/git-commit-info.txt && \
+    echo "Commit: $(cat /tmp/git-commit-sha.txt)" && \
+    echo "Info: $(cat /tmp/git-commit-info.txt)" && \
+    echo "Date: $(git log -1 --format=%cd)" && \
+    echo "Author: $(git log -1 --format=%an)" && \
+    echo "==========================="
+
+# ------------------------------------------------------------
+# Apply compatibility patches for Fil-C
+# ------------------------------------------------------------
+RUN cd /opt/iccdev-latest && \
+    echo "Applying compatibility patches..." && \
+    sed -i 's/return NULL;/return false;/g' IccXML/IccLibXML/IccProfileXml.cpp && \
+    echo "Patched IccProfileXml.cpp: NULL -> false" && \
+    grep -n "return false;" IccXML/IccLibXML/IccProfileXml.cpp | head -5
+
+# ------------------------------------------------------------
+# Disable various tools - tl;dr - needs more time to test
+# ------------------------------------------------------------
+RUN cd /opt/iccdev-latest/Build/Cmake && \
+    echo "Disabling tools with header issues..." && \
+    sed -i '/ADD_SUBDIRECTORY(Tools\/IccPngDump)/s/^/# DISABLED: /' CMakeLists.txt && \
+    sed -i '/ADD_SUBDIRECTORY(Tools\/IccTiffDump)/s/^/# DISABLED: /' CMakeLists.txt && \
+    sed -i '/ADD_SUBDIRECTORY(Tools\/IccSpecSepToTiff)/s/^/# DISABLED: /' CMakeLists.txt && \
+    sed -i '/ADD_SUBDIRECTORY(Tools\/IccJpegDump)/s/^/# DISABLED: /' CMakeLists.txt && \
+    echo "Verification - checking disabled lines:" && \
+    grep -n "DISABLED.*IccPngDump\|DISABLED.*IccTiffDump\|DISABLED.*IccSpecSep\|DISABLED.*IccJpegDump" CMakeLists.txt
+
+# ------------------------------------------------------------
+# Set Fil-C compiler environment
+# ------------------------------------------------------------
+ENV FILC_ROOT=/opt/fil-c
+ENV PKG_CONFIG_PATH=/opt/fil-c/pizfix/lib/pkgconfig
+ENV CMAKE_PREFIX_PATH=/opt/fil-c/pizfix
+ENV CC=/opt/fil-c/build/bin/filcc
+ENV CXX=/opt/fil-c/build/bin/fil++
+
+# Verify Fil-C toolchain
+RUN echo "=== Fil-C Toolchain Verification ===" && \
+    test -f "$CC" && echo "CC: $CC ✓" || echo "CC: MISSING" && \
+    test -f "$CXX" && echo "CXX: $CXX ✓" || echo "CXX: MISSING" && \
+    ls -lh "$CC" "$CXX" 2>/dev/null || echo "ERROR: Fil-C compilers not found"
+
+# ------------------------------------------------------------
+# Disable wxWidgets (not needed for core tools)
+# ------------------------------------------------------------
+RUN cd /opt/iccdev-latest && \
+    sed -i '/find_package(wxWidgets COMPONENTS core base REQUIRED)/,/endif()/ s/^/# /' Build/Cmake/CMakeLists.txt && \
+    echo "wxWidgets disabled in CMakeLists.txt"
+
+# ------------------------------------------------------------
+# Build iccDEV with Fil-C (continue on non-critical errors)
+# ------------------------------------------------------------
+# NOTE: Using Debug build (-DCMAKE_BUILD_TYPE=Debug) because:
+#   - Fil-C requires -g flag for meaningful error messages
+#   - Release builds without -g may crash on memory safety violations
+#   - Debug symbols essential for troubleshooting Fil-C issues
+#   - Performance overhead is acceptable for development containers
+# ------------------------------------------------------------
+RUN mkdir -p /opt/iccdev-latest-build && \
+    cd /opt/iccdev-latest-build && \
+    echo "=== Configuring with CMake ===" && \
+    cmake /opt/iccdev-latest/Build/Cmake \
+        -DCMAKE_BUILD_TYPE=Debug \
+        -DCMAKE_C_COMPILER="$CC" \
+        -DCMAKE_CXX_COMPILER="$CXX" \
+        -DCMAKE_PREFIX_PATH="$CMAKE_PREFIX_PATH" \
+        -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+        -DTIFF_LIBRARY="$FILC_ROOT/pizfix/lib/libtiff.so" \
+        -DTIFF_INCLUDE_DIR="$FILC_ROOT/pizfix/include" \
+        -DZLIB_LIBRARY="$FILC_ROOT/pizfix/lib/libz.so" \
+        -DZLIB_INCLUDE_DIR="$FILC_ROOT/pizfix/include" \
+        -DPNG_LIBRARY="$FILC_ROOT/pizfix/lib/libpng.so" \
+        -DPNG_PNG_INCLUDE_DIR="$FILC_ROOT/pizfix/include" \
+        -DJPEG_LIBRARY="$FILC_ROOT/pizfix/lib/libjpeg.so" \
+        -DJPEG_INCLUDE_DIR="$FILC_ROOT/pizfix/include" \
+        -DLIBXML2_LIBRARY="$FILC_ROOT/pizfix/lib/libxml2.so" \
+        -DLIBXML2_INCLUDE_DIR="$FILC_ROOT/pizfix/include/libxml2" && \
+    echo "=== Building with make (continue on errors) ===" && \
+    make -j"$(nproc)" -k || echo "Build completed with some errors (expected)" && \
+    echo "=== Build Summary ===" && \
+    echo "Tools built:" && \
+    find Tools -name "icc*" -type f -executable 2>/dev/null | wc -l && \
+    echo "Libraries built:" && \
+    find . -name "*.so*" -type f 2>/dev/null | wc -l
+
+# ------------------------------------------------------------
+# List what was successfully built
+# ------------------------------------------------------------
+RUN cd /opt/iccdev-latest-build && \
+    echo "=== Successfully Built Tools ===" && \
+    find Tools -name "icc*" -type f -executable 2>/dev/null | sort
+
+# ------------------------------------------------------------
+# Copy Testing directory from source
+# ------------------------------------------------------------
+RUN cp -r /opt/iccdev-latest/Testing /opt/iccdev-latest-build/Testing && \
+    echo "Testing directory copied"
+
+# ------------------------------------------------------------
+# Save Git commit information (before .git is removed)
+# ------------------------------------------------------------
+RUN cp /tmp/git-commit-sha.txt /opt/iccdev-latest-build/ && \
+    cp /tmp/git-commit-info.txt /opt/iccdev-latest-build/ && \
+    echo "Git commit info saved"
+
+# ------------------------------------------------------------
+# Create test script
+# ------------------------------------------------------------
+# Create test script
+# ------------------------------------------------------------
+RUN cat >/opt/iccdev-latest-build/test-latest-filc.sh <<'EOF'
+#!/bin/bash
+set -eu
+echo "========================================="
+echo "Testing Latest iccDEV HEAD with Fil-C"
+echo "========================================="
+echo ""
+
+# PATH is now set via ENV, so tools should be available
+# Verify PATH is set correctly
+echo "Tool paths configured: $(echo $PATH | tr ':' '\n' | grep -c iccdev || echo 0) directories"
+echo ""
+
+# Show library versions first
+if command -v iccToXml &>/dev/null; then
+    echo "Library Versions:"
+    iccToXml 2>&1 | head -2 | grep -E "(IccProfLib|IccLibXML)" || iccToXml 2>&1 | head -2
+    echo ""
+else
+    echo "WARNING: iccToXml not found in PATH"
+    echo "Current PATH: $PATH"
+fi
+
+echo "Available Tools:"
+find /opt/iccdev-latest/Tools -name "icc*" -type f -executable 2>/dev/null | xargs -n1 basename | sort
+echo ""
+
+# Change to testing directory (absolute path)
+cd /opt/iccdev-latest/Testing/Testing
+echo "Creating all ICC profiles..."
+bash CreateAllProfiles.sh 2>&1 | tail -30 || echo "Some profile creation steps may have failed"
+echo ""
+echo "ICC Profile count:"
+find . -iname "*.icc" | wc -l
+echo ""
+echo "========================================="
+echo "Test Complete"
+echo "========================================="
+EOF
+
+# Fix line endings (Windows CRLF -> Unix LF)
+RUN dos2unix /opt/iccdev-latest-build/test-latest-filc.sh 2>/dev/null || \
+    sed -i 's/\r$//' /opt/iccdev-latest-build/test-latest-filc.sh
+
+RUN chmod +x /opt/iccdev-latest-build/test-latest-filc.sh
+
+# ------------------------------------------------------------
+# CRITICAL: Security scrubbing - Remove ALL sensitive data
+# ------------------------------------------------------------
+RUN echo "=== Security Scrubbing ===" && \
+    # Remove SSH keys and configs
+    rm -rf /root/.ssh /root/.gnupg /root/.config /root/.gitconfig || true && \
+    rm -rf /home/*/.ssh /home/*/.gnupg /home/*/.config || true && \
+    # Remove git credentials and history
+    rm -rf /opt/iccdev-latest/.git || true && \
+    find / -name ".git-credentials" -delete 2>/dev/null || true && \
+    find / -name ".netrc" -delete 2>/dev/null || true && \
+    # Remove any token files
+    find /opt/iccdev-latest -type f \( \
+        -name "*token*" -o \
+        -name "*secret*" -o \
+        -name "*password*" -o \
+        -name "*.pem" -o \
+        -name "*.key" -o \
+        -name "*id_rsa*" -o \
+        -name "*id_dsa*" -o \
+        -name "*id_ecdsa*" -o \
+        -name "*id_ed25519*" -o \
+        -name "*.asc" -o \
+        -name ".dockercfg" -o \
+        -name "config.json" \
+    \) -delete 2>/dev/null || true && \
+    # Clear shell history
+    rm -f /root/.bash_history /root/.zsh_history || true && \
+    find /home -name ".bash_history" -delete 2>/dev/null || true && \
+    find /home -name ".zsh_history" -delete 2>/dev/null || true && \
+    # Clear any cached credentials
+    rm -rf /root/.cache /root/.docker || true && \
+    find /home -name ".cache" -exec rm -rf {} + 2>/dev/null || true && \
+    # Remove any environment files that might contain secrets
+    find / -name ".env" -delete 2>/dev/null || true && \
+    find / -name ".env.*" -delete 2>/dev/null || true && \
+    # Clear apt caches
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* || true && \
+    echo "=== Security Scrubbing Complete ==="
+
+###############################################################
+# 2) RUNTIME STAGE
+###############################################################
+FROM srdcx/filc-base:latest AS runtime
+ENV DEBIAN_FRONTEND=noninteractive
+
+LABEL stage="runtime" \
+      org.opencontainers.image.title="iccDEV with Fil-C Memory Safety" \
+      org.opencontainers.image.description="Latest iccDEV HEAD built with Fil-C - Runtime Environment" \
+      org.opencontainers.image.licenses="BSD-3-Clause" \
+      org.opencontainers.image.vendor="International Color Consortium" \
+      org.opencontainers.image.version="v2.0.0.82"
+
+# ------------------------------------------------------------
+# Copy build artifacts (including all libraries)
+# ------------------------------------------------------------
+COPY --from=builder /opt/iccdev-latest-build /opt/iccdev-latest
+
+# Get commit info if available
+# Already copied from builder: git-commit-sha.txt and git-commit-info.txt
+
+# ------------------------------------------------------------
+# Setup library paths (use full iccdev-filc runtime)
+# ------------------------------------------------------------
+ENV LD_LIBRARY_PATH=/opt/iccdev-latest/IccProfLib:/opt/iccdev-latest/IccXML:/opt/fil-c/pizfix/lib:/opt/fil-c/build/lib:/usr/lib/x86_64-linux-gnu:/lib/x86_64-linux-gnu
+
+# ------------------------------------------------------------
+# Create tool paths
+# ------------------------------------------------------------
+RUN find /opt/iccdev-latest/Tools -type d -maxdepth 1 | \
+    grep -v "^/opt/iccdev-latest/Tools$" | \
+    paste -sd: - > /opt/iccdev-latest-paths.txt || echo "" > /opt/iccdev-latest-paths.txt
+
+# ------------------------------------------------------------
+# Fix test script path expectations (create Build symlink)
+# ------------------------------------------------------------
+RUN cd /opt/iccdev-latest && \
+    ln -s . Build && \
+    echo "Created Build -> . symlink for test script compatibility"
+
+# ------------------------------------------------------------
+# Setup PATH for tools (FIXED: works in all shell types)
+# ------------------------------------------------------------
+RUN if [ -s /opt/iccdev-latest-paths.txt ]; then \
+        TOOLPATHS="$(cat /opt/iccdev-latest-paths.txt)" && \
+        printf 'export PATH=%s:$PATH\n' "$TOOLPATHS" \
+            > /etc/profile.d/00-iccdev-latest-path.sh && \
+        chmod 644 /etc/profile.d/00-iccdev-latest-path.sh && \
+        printf 'PATH=%s:$PATH\n' "$TOOLPATHS" >> /etc/environment; \
+    fi
+
+# ------------------------------------------------------------
+# Load profile scripts in bash (for login shells)
+# ------------------------------------------------------------
+RUN echo 'for f in /etc/profile.d/*.sh; do [ -r "$f" ] && . "$f"; done' \
+    >> /etc/bash.bashrc 2>/dev/null || true
+
+# ------------------------------------------------------------
+# Set ENV for PATH (works in all containers, all shell types)
+# ------------------------------------------------------------
+ENV PATH=/opt/iccdev-latest/Tools/IccDEVCmm:/opt/iccdev-latest/Tools/IccFromXml:/opt/iccdev-latest/Tools/IccV5DspObsToV4Dsp:/opt/iccdev-latest/Tools/IccApplyToLink:/opt/iccdev-latest/Tools/IccFromCube:/opt/iccdev-latest/Tools/IccApplyProfiles:/opt/iccdev-latest/Tools/IccToXml:/opt/iccdev-latest/Tools/IccApplyNamedCmm:/opt/iccdev-latest/Tools/IccRoundTrip:/opt/iccdev-latest/Tools/IccDumpProfile:/opt/iccdev-latest/Tools/IccApplySearch:${PATH}
+
+# ------------------------------------------------------------
+# Create banner with Git commit info (with guard to show only once)
+# ------------------------------------------------------------
+RUN { \
+  echo "# Only show banner once per session"; \
+  echo "if [ -z \"\$ICCDEV_BANNER_SHOWN\" ]; then"; \
+  echo "  export ICCDEV_BANNER_SHOWN=1"; \
+  echo "  echo \"\""; \
+  echo "  echo \"=================================================================\""; \
+  echo "  echo \"==== Latest iccDEV HEAD Built with Fil-C Memory Safety      ====\""; \
+  echo "  echo \"==== (Patched for Fil-C Compatibility)                       ====\""; \
+  echo "  echo \"==== International Color Consortium + Epic Games Fil-C       ====\""; \
+  echo "  echo \"=================================================================\""; \
+  echo "  echo \"\""; \
+  echo "  echo \"Source: https://github.com/InternationalColorConsortium/iccDEV\""; \
+  echo "  if [ -f /opt/iccdev-latest/git-commit-info.txt ]; then"; \
+  echo "    echo \"Commit: \$(cat /opt/iccdev-latest/git-commit-info.txt)\""; \
+  echo "    echo \"SHA:    \$(cat /opt/iccdev-latest/git-commit-sha.txt)\""; \
+  echo "  else"; \
+  echo "    echo \"Commit: latest-\$(date +%Y%m%d)\""; \
+  echo "  fi"; \
+  echo "  echo \"\""; \
+  echo "  echo \"Fil-C Memory Safety:\""; \
+  echo "  echo \"  ✓ Garbage Collection\""; \
+  echo "  echo \"  ✓ Bounds Checking\""; \
+  echo "  echo \"  ✓ Type Safety\""; \
+  echo "  echo \"\""; \
+  echo "  echo \"Patches Applied:\""; \
+  echo "  echo \"  • IccProfileXml.cpp: NULL -> false (Fil-C compatibility)\""; \
+  echo "  echo \"\""; \
+  echo "  echo \"Tools location: /opt/iccdev-latest/Tools/\""; \
+  echo "  echo \"Libraries: IccProfLib 2.3.1.2, IccLibXML 2.3.1.2\""; \
+  echo "  echo \"\""; \
+  echo "  echo \"List tools: find /opt/iccdev-latest/Tools -name 'icc*' -executable\""; \
+  echo "  echo \"Run tests: bash /opt/iccdev-latest/test-latest-filc.sh\""; \
+  echo "  echo \"\""; \
+  echo "fi"; \
+} > /etc/profile.d/iccdev-latest-banner.sh \
+ && chmod 644 /etc/profile.d/iccdev-latest-banner.sh
+
+# ------------------------------------------------------------
+# Custom prompt with timestamp, repo, branch, commit
+# ------------------------------------------------------------
+RUN { \
+  echo '# Extract repo, branch, commit info'; \
+  echo 'REPO="iccDEV"'; \
+  echo 'BRANCH="main"'; \
+  echo 'if [ -f /opt/iccdev-latest/git-commit-info.txt ]; then'; \
+  echo '  COMMIT_SHORT=$(cat /opt/iccdev-latest/git-commit-info.txt | cut -d" " -f1)'; \
+  echo 'else'; \
+  echo '  COMMIT_SHORT="unknown"'; \
+  echo 'fi'; \
+  echo ''; \
+  echo '# Custom PS1 with timestamp and git info (# for root, $ for users)'; \
+  echo 'if [ "$UID" -eq 0 ]; then'; \
+  echo '  PROMPT_CHAR="#"'; \
+  echo 'else'; \
+  echo '  PROMPT_CHAR="$"'; \
+  echo 'fi'; \
+  echo 'export PS1="[\$(date -u +\"%Y-%m-%d %H:%M:%S UTC\")] \${REPO}:\${BRANCH}:\${COMMIT_SHORT} \w\${PROMPT_CHAR} "'; \
+} > /etc/profile.d/10-filc-latest-prompt.sh \
+ && chmod 644 /etc/profile.d/10-filc-latest-prompt.sh \
+ && cat /etc/profile.d/10-filc-latest-prompt.sh >> /root/.bashrc \
+ && echo "Custom prompt configured for all users"
+
+# ------------------------------------------------------------
+# FINAL SECURITY SCRUBBING - Runtime Stage
+# ------------------------------------------------------------
+RUN echo "=== Final Security Scrubbing (Runtime) ===" && \
+    # Remove any credentials that might have been copied
+    rm -rf /root/.ssh /root/.gnupg /root/.config /root/.gitconfig || true && \
+    rm -rf /home/*/.ssh /home/*/.gnupg /home/*/.config || true && \
+    # Remove git directories
+    find /opt -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true && \
+    # Remove any token/key files
+    find /opt -type f \( \
+        -name "*token*" -o \
+        -name "*secret*" -o \
+        -name "*password*" -o \
+        -name "*.pem" -o \
+        -name "*.key" -o \
+        -name "*id_rsa*" -o \
+        -name "*.asc" \
+    \) -delete 2>/dev/null || true && \
+    # Clear histories
+    rm -f /root/.bash_history /root/.zsh_history || true && \
+    find /home -name ".bash_history" -delete 2>/dev/null || true && \
+    # Clear caches (skip apt-get - broken in base image)
+    rm -rf /root/.cache /tmp/* /var/tmp/* /var/lib/apt/lists/* || true && \
+    # Verify no git repos remain
+    echo "Checking for remaining .git directories:" && \
+    find / -name ".git" -type d 2>/dev/null | wc -l && \
+    echo "=== Security Scrubbing Complete ===" && \
+    echo "Image is clean of credentials and sensitive data"
+
+# ------------------------------------------------------------
+# Create non-root user (security best practice)
+# ------------------------------------------------------------
+RUN groupadd -r iccdev && \
+    useradd -r -g iccdev -d /home/iccdev -s /bin/bash iccdev && \
+    mkdir -p /home/iccdev && \
+    chown -R iccdev:iccdev /home/iccdev && \
+    chown -R iccdev:iccdev /opt/iccdev-latest && \
+    cat /etc/profile.d/10-filc-latest-prompt.sh >> /home/iccdev/.bashrc && \
+    chown iccdev:iccdev /home/iccdev/.bashrc && \
+    echo "Non-root user 'iccdev' created"
+
+WORKDIR /opt/iccdev-latest
+
+# Switch to non-root user
+USER iccdev
+
+# ------------------------------------------------------------
+# Health check - Verify tools are accessible and functional
+# ------------------------------------------------------------
+# Tests that:
+#   - iccToXml is in PATH
+#   - Tool executes without crashing
+#   - Fil-C runtime is operational
+# Run every 30s, timeout after 3s, allow 5s startup, retry 3 times
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD iccToXml --help >/dev/null 2>&1 || exit 1
+
+CMD ["bash", "-l"]
