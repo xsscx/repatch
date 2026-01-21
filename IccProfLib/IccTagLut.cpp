@@ -82,6 +82,7 @@
 #include "IccUtil.h"
 #include "IccProfile.h"
 #include "IccMpeBasic.h"
+#include <cmath>
 
 #ifdef USEICCDEVNAMESPACE
 namespace iccDEV {
@@ -1619,6 +1620,9 @@ icValidateStatus CIccMatrix::Validate(std::string sigPath, std::string &sReport,
   
 static icFloatNumber ClutUnitClip(icFloatNumber v)
 {
+	// Check for NaN first - NaN comparisons always return false
+  if (std::isnan(v))
+    return 0;
   if (v<0)
     return 0;
   else if (v>1.0)
