@@ -72,10 +72,10 @@
   #pragma warning( disable: 4786) //disable warning in <list.h>
   #include <windows.h>
 #endif
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cmath>
+#include <cstring>
+#include <cstdlib>
 #include "IccTag.h"
 #include "IccUtil.h"
 #include "IccProfile.h"
@@ -6681,7 +6681,7 @@ bool CIccTagFloatNum<T, Tsig>::Interpolate(icFloatNumber *DstVector, icFloatNumb
     pos=0.0;
   if (pos>1.0)
     pos=1.0;
-  if (isnan(pos))
+  if (std::isnan(pos))
     pos=0.0;
 
   icFloatNumber fpos = (icFloatNumber)(nVector-1) * pos;

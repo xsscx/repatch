@@ -72,10 +72,10 @@
 #pragma warning( disable: 4786) //disable warning in <list.h>
 #endif
 
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cmath>
+#include <cstring>
+#include <cstdlib>
 #include "IccMpeBasic.h"
 #include "IccIO.h"
 #include <map>
@@ -1802,9 +1802,9 @@ bool CIccSingleSampledCurve::Begin(icElemInterp /* nInterp */, CIccTagMultiProce
 ******************************************************************************/
 icFloatNumber CIccSingleSampledCurve::Apply(icFloatNumber v) const
 {
-  if (isnan(v))
+  if (std::isnan(v))
     return 0.0;
-  if (isinf(v)) {
+  if (std::isinf(v)) {
     if (v < 0.0)
       return 0.0;
     else
@@ -5372,9 +5372,9 @@ icValidateStatus CIccMpeMatrix::Validate(std::string sigPath, std::string &sRepo
 
 static icFloatNumber NoClip(icFloatNumber v)
 {
-  if (isnan(v))
+  if (std::isnan(v))
     return icFloatNumber(0);
-  if (isinf(v))
+  if (std::isinf(v))
     return icFloatNumber(1000);  // value chosen arbitrarily, but doesn't overflow integer types
   return v;
 }
