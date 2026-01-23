@@ -33,7 +33,7 @@ libraries included in iccDEV.
 Contributors are ICC members and other individual contributors who have volunteered to
 maintain ICC software, documentation, or other technical artifacts. Our CONTRIBUTING
 document explains our contribution processes and procedures, so please review it first:
-[CONTRIBUTING](../docs/CONTRIBUTING.md). Contributors are asked to sign a [Contributor License Agreement](https://github.com/InternationalColorConsortium/.github/blob/main/docs/CLA.md)
+[CONTRIBUTING](https://github.com/InternationalColorConsortium/iccDEV?tab=contributing-ov-file#contributing-to-international-color-consortium-software). Contributors are asked to sign a [Contributor License Agreement](https://github.com/InternationalColorConsortium/.github/blob/main/docs/CLA.md)
 
 ## License
 
