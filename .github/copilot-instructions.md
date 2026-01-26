@@ -50,10 +50,10 @@ iccDEV is an open source set of libraries and tools for interaction, manipulatio
 (e.g. `libwxgtk3.2-dev`). Refer to the `apt install` command below for the exact package names.
 
 ### Build Commands
-#### Ubuntu GNU
+#### Ubuntu
 
 ```
-export CXX=g++
+export CXX=clang++
 git clone https://github.com/InternationalColorConsortium/iccdev.git iccdev
 cd iccdev/Build
 sudo apt install -y libpng-dev libjpeg-dev libtiff-dev libwxgtk3.2-dev libwxgtk-{media,webview}3.2-dev wx-common wx3.2-headers curl git make cmake clang{,-tools} libxml2{,-dev} nlohmann-json3-dev build-essential
@@ -62,7 +62,7 @@ make -j"$(nproc)"
 
 ```
 
-#### macOS Clang
+#### macOS
 
 ```
 export CXX=clang++
