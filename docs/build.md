@@ -7,7 +7,7 @@
 | **Homebrew** | `brew install iccdev` |
 | **NPM** | `npm install iccdev` |
 | **Docker Pull** | `docker pull ghcr.io/internationalcolorconsortium/iccdev:latest` |
-| **Docker Run** | `docker run -it ghcr.io/internationalcolorconsortium/iccdev:latest bash -l` |
+| **Docker Run** | `docker run -it ghcr.io/internationalcolorconsortium/iccdev:latest` |
 
 ## Required libraries
 
@@ -20,13 +20,13 @@
 \* **Note:** On Ubuntu, `wxwidgets` is installed via distribution-specific development packages  
 (e.g. `libwxgtk3.2-dev`). Refer to the `apt install` command below for the exact package names.
 
-iccDEV requires C++17 or higher to compile.
+iccDEV requires C++17
 
 
-## Ubuntu GNU
+## Ubuntu
 
 ```
-export CXX=g++
+export CXX=clang++
 git clone https://github.com/InternationalColorConsortium/iccdev.git iccdev
 cd iccdev/Build
 sudo apt install -y libpng-dev libjpeg-dev libtiff-dev libwxgtk3.2-dev libwxgtk-{media,webview}3.2-dev wx-common wx3.2-headers curl git make cmake clang{,-tools} libxml2{,-dev} nlohmann-json3-dev build-essential
@@ -35,7 +35,7 @@ make -j"$(nproc)"
 
 ```
 
-## macOS Clang
+## macOS
 
 ```
 export CXX=clang++
