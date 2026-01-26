@@ -7,7 +7,7 @@
 | **Homebrew** | `brew install iccdev` |
 | **NPM** | `npm install iccdev` |
 | **Docker Pull** | `docker pull ghcr.io/internationalcolorconsortium/iccdev:latest` |
-| **Docker Run** | `docker run -it ghcr.io/internationalcolorconsortium/iccdev:latest bash -l` |
+| **Docker Run** | `docker run -it ghcr.io/internationalcolorconsortium/iccdev:latest` |
 
 To build from source, see: [Build documentation](docs/build.md)
 

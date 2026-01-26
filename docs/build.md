@@ -20,7 +20,7 @@
 \* **Note:** On Ubuntu, `wxwidgets` is installed via distribution-specific development packages  
 (e.g. `libwxgtk3.2-dev`). Refer to the `apt install` command below for the exact package names.
 
-iccDEV requires C++17
+iccDEV requires C++17 or higher to compile.
 
 
 ## Ubuntu
