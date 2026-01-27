@@ -112,7 +112,7 @@ CIccSparseMatrix &CIccSparseMatrix::operator=(const CIccSparseMatrix &mtx)
   return *this;
 }
 
-void CIccSparseMatrix::Reset(void *pMatrix, size_t nSize, icSparseMatrixType nType, bool bInitFromData/*=true*/)
+bool CIccSparseMatrix::Reset(void *pMatrix, size_t nSize, icSparseMatrixType nType, bool bInitFromData/*=true*/)
 {
   if (m_Data)
     delete m_Data;
@@ -125,7 +125,7 @@ void CIccSparseMatrix::Reset(void *pMatrix, size_t nSize, icSparseMatrixType nTy
   if (bInitFromData) {
     icUInt16Number nRows = *((icUInt16Number*)pMatrix);
     icUInt16Number nCols = *((icUInt16Number*)(m_pMatrix+sizeof(icUInt16Number)));
-    Init(nRows, nCols);
+    return Init(nRows, nCols);
   }
   else {
     m_nRows = 0;
@@ -133,7 +133,9 @@ void CIccSparseMatrix::Reset(void *pMatrix, size_t nSize, icSparseMatrixType nTy
     m_nMaxEntries = 0;
     m_RowStart = NULL;
     m_ColumnIndices = NULL;
+    return true;
   }
+
 }
 
 
