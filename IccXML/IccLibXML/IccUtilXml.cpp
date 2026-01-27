@@ -75,6 +75,7 @@
 #include <cstring> /* C strings strcpy, memcpy ... */
 #include <cmath>  /* nanf */
 #include <limits>
+#include <type_traits>
 
 
 
@@ -1041,7 +1042,10 @@ icUInt32Number CIccXmlArrayType<T, Tsig>::ParseText(T* pBuf, icUInt32Number nSiz
     else if (bInNum) {
       num[b] = 0;
       if (!strncmp(num, "nan", 3) || !strncmp(num, "-nan", 4)) {
-        pBuf[n] = (T)nanf(num);
+        if (std::is_floating_point<T>())        // compile type constant for each type
+          pBuf[n] = (T)nanf(num);
+        else
+          pBuf[n] = 0;  // flush nan to zero for integers
       }
       else {
         pBuf[n] = clipTypeRange<T>(atof(num));  // clip input to valid output range
@@ -1054,7 +1058,10 @@ icUInt32Number CIccXmlArrayType<T, Tsig>::ParseText(T* pBuf, icUInt32Number nSiz
   if ( bInNum && (n < nSize) ) {
     num[b] = 0;
     if (!strncmp(num, "nan", 3) || !strncmp(num, "-nan", 4)) {
-      pBuf[n] = (T)nanf(num);
+        if (std::is_floating_point<T>())        // compile type constant for each type
+          pBuf[n] = (T)nanf(num);
+        else
+          pBuf[n] = 0;  // flush nan to zero for integers
     }
     else {
       pBuf[n] = clipTypeRange<T>(atof(num));  // clip input to valid output range
