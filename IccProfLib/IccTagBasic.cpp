@@ -4643,12 +4643,16 @@ bool CIccTagSparseMatrixArray::Read(icUInt32Number size, CIccIO *pIO)
 
       nSizeLeft -= n;
       pos += n;
-      mtx.Reset(pMatrix, nBytesPerMatrix, icSparseMatrixFloatNum, true);
-
-      if (mtx.GetNumEntries()>mtx.MaxEntries(nChannels*sizeof(icFloatNumber), mtx.Rows(), sizeof(icFloatNumber)))
+      if (!mtx.Reset(pMatrix, nBytesPerMatrix, icSparseMatrixFloatNum, true))
         return false;
 
       size_t num_entries = mtx.GetNumEntries();
+      if (num_entries == 0)
+        return false;
+
+      if (mtx.GetNumEntries()>mtx.MaxEntries(nChannels*sizeof(icFloatNumber), mtx.Rows(), sizeof(icFloatNumber)))
+        return false;
+    
       n = (icUInt32Number) (num_entries*sizeof(icUInt16Number));
 
       if (nSizeLeft<n)
@@ -4801,7 +4805,9 @@ bool CIccTagSparseMatrixArray::Write(CIccIO *pIO)
 
   for (i=0; i<(int)m_nSize; i++) {
     icUInt8Number *pMatrix = m_RawData + (size_t)i * nBytesPerMatrix;
-    mtx.Reset(pMatrix, nBytesPerMatrix, icSparseMatrixFloatNum, true);
+    if (!mtx.Reset(pMatrix, nBytesPerMatrix, icSparseMatrixFloatNum, true))
+      return false;
+    
     nRows = mtx.Rows();
 
     //int n = (nRows+3)*sizeof(icUInt16Number);
@@ -4982,17 +4988,32 @@ icValidateStatus CIccTagSparseMatrixArray::Validate(std::string sigPath, std::st
   int i;
 
   icUInt16Number nBytesPerMatrix = m_nChannelsPerMatrix * sizeof(icFloatNumber);
+  const size_t bufSize = 128;
+  char buf[bufSize];
+  
+  if (!mtx.Reset(m_RawData, nBytesPerMatrix, icSparseMatrixFloatNum, true)) {
+    sReport += icMsgValidateCriticalError;
+    sReport += sSigPathName;
+    snprintf(buf, bufSize, " - Matrix could not read correctly\n");
+    sReport += buf;
+    rv = icMaxStatus(rv, icValidateCriticalError);
+    return rv;
+  }
 
-  mtx.Reset(m_RawData, nBytesPerMatrix, icSparseMatrixFloatNum, true);
   nRows = mtx.Rows();
   nCols = mtx.Cols();
   icUInt32Number nMaxElements = CIccSparseMatrix::MaxEntries(nBytesPerMatrix, nRows, sizeof(icFloatNumber));
-  const size_t bufSize = 128;
-  char buf[bufSize];
   icUInt8Number *temp = new icUInt8Number[nBytesPerMatrix];
 
   for (i=0; i<(int)m_nSize; i++) {
-    mtx.Reset(m_RawData+i*nBytesPerMatrix, nBytesPerMatrix, icSparseMatrixFloatNum, true);
+    if (!mtx.Reset(m_RawData+i*nBytesPerMatrix, nBytesPerMatrix, icSparseMatrixFloatNum, true)) {
+      sReport += icMsgValidateCriticalError;
+      sReport += sSigPathName;
+      snprintf(buf, bufSize, " - Matrix[%d] could not read correctly\n", i);
+      sReport += buf;
+      rv = icMaxStatus(rv, icValidateCriticalError);
+    }
+    
     if (mtx.Rows() != nRows || mtx.Cols() != nCols) {
       sReport += icMsgValidateCriticalError;
       sReport += sSigPathName;
@@ -5091,9 +5112,7 @@ bool CIccTagSparseMatrixArray::GetSparseMatrix(CIccSparseMatrix &mtx, int nIndex
 
   icUInt32Number nBytesPerMatrix = GetBytesPerMatrix();
 
-  mtx.Reset(m_RawData+nIndex*GetBytesPerMatrix(), nBytesPerMatrix, icSparseMatrixFloatNum, bInitFromData);
-
-  return true;
+  return mtx.Reset(m_RawData+nIndex*GetBytesPerMatrix(), nBytesPerMatrix, icSparseMatrixFloatNum, bInitFromData);
 }
 
 bool CIccTagSparseMatrixArray::GetValues(icFloatNumber *DstVector, icUInt32Number nStart/*=0*/, icUInt32Number nVectorSize/*=1*/) const

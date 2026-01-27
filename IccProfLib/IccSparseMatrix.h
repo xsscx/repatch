@@ -159,7 +159,7 @@ public:
   icUInt16Number Rows() const { return m_nRows; }
   icUInt16Number Cols() const { return m_nCols; }
 
-  void Reset(void *pMatrix, size_t nSize, icSparseMatrixType nType, bool bInitFromData=true);
+  bool Reset(void *pMatrix, size_t nSize, icSparseMatrixType nType, bool bInitFromData=true);
   bool Init(icUInt16Number nRows, icUInt16Number nCols, bool bSetData=false);
   void Clear();
   bool Copy(const CIccSparseMatrix &mtx);
