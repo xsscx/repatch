@@ -1376,10 +1376,14 @@ typedef enum {
 } icSparseMatrixType;
 
 
-/* Image encoding type encodings for embeddedHeightImageType and embeddedNormalImageType*/
-typedef enum {
+/** Image encoding type encodings for embeddedHeightImageType and embeddedNormalImageType*/
+/* Despite looking like a bool, it must be capable of holding an unsigned 32 bit value as written in profiles */
+typedef enum : icUInt32Number {
   icPngImageType                     = 0x0000,
   icTiffImageType                    = 0x0001,
+  
+/* Convenience Enum Definitions - Not defined in ICC specification */
+  icImageTypeMaximum                 = 0xffffffff,      /* maximum to define range */
 } icImageEncodingType;
 
 
