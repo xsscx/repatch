@@ -238,6 +238,7 @@ int main(int argc, icChar* argv[])
           printf("\nUnable to extract profile\n");
         }
       }
+      delete pProfile;
     }
   } else {
     printf("Profile:           None\n");
