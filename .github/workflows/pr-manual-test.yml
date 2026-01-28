@@ -239,7 +239,7 @@ jobs:
   # Call the Unix CI workflow to actually build and test the PR
   unix-ci:
     name: 🧱 Unix Build & Test
-    needs: [update_labels]
+    needs: [label-status]
     uses: ./.github/workflows/ci-pr-unix.yml
     permissions:
       contents: read
