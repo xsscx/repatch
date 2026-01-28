@@ -2973,6 +2973,7 @@ bool CIccTagNamedColor2::Read(icUInt32Number size, CIccIO *pIO)
     if (pIO->Read8(&pNamedColor->rootName, sizeof(pNamedColor->rootName))!=sizeof(pNamedColor->rootName) ||
         pIO->ReadUInt16Float(&pNamedColor->pcsCoords, 3)!=3)
       return false;
+    pNamedColor->rootName[sizeof(pNamedColor->rootName)-1] = 0;  // make sure it is NULL terminated
     if (nCoords) {
       if (pIO->ReadUInt16Float(&pNamedColor->deviceCoords, nCoords)!= nCoords)
         return false;
