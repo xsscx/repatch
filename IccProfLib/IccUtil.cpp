@@ -552,7 +552,9 @@ icS15Fixed16Number icDtoF(icFloatNumber num)
 {
   icS15Fixed16Number rv;
 
-  if (num<-32768.0)
+  if (std::isnan(num))
+    num = 0;
+  else if (num<-32768.0)
     num = -32768.0;
   else if (num>32767.0)
     num = 32767.0;
@@ -573,7 +575,9 @@ icU16Fixed16Number icDtoUF(icFloatNumber num)
 {
   icU16Fixed16Number rv;
 
-  if (num<0)
+  if (std::isnan(num))
+    num = 0;
+  else if (num<0)
     num = 0;
   else if (num>65535.0)
     num = 65535.0;
@@ -594,7 +598,9 @@ icU1Fixed15Number icDtoUSF(icFloatNumber num)
 {
   icU1Fixed15Number rv;
 
-  if (num<0)
+  if (std::isnan(num))
+    num = 0;
+  else if (num<0)
     num = 0;
   else if (num>65535.0/32768.0)
     num = 65535.0/32768.0;
@@ -615,7 +621,9 @@ icU8Fixed8Number icDtoUCF(icFloatNumber num)
 {
   icU8Fixed8Number rv;
 
-  if (num<0)
+  if (std::isnan(num))
+    num = 0;
+  else if (num<0)
     num = 0;
   else if (num>255.0)
     num = 255.0;
@@ -732,7 +740,9 @@ icUInt8Number icFtoU8(icFloatNumber num)
 {
   icUInt8Number rv;
 
-  if (num<0)
+  if (std::isnan(num))
+    num = 0;
+  else if (num<0)
     num = 0;
   else if (num>1.0)
     num = 1.0;
@@ -753,7 +763,9 @@ icUInt16Number icFtoU16(icFloatNumber num)
 {
   icUInt16Number rv;
 
-  if (num<0)
+  if (std::isnan(num))
+    num = 0;
+  else if (num<0)
     num = 0;
   else if (num>1.0)
     num = 1.0;
@@ -773,7 +785,10 @@ icFloatNumber icU16toF(icUInt16Number num)
 icUInt8Number icABtoU8(icFloatNumber num)
 {
   icFloatNumber v = num + 128.0f;
-  if (v<0)
+  
+  if (std::isnan(num))
+    num = 0;
+  else if (v<0)
     v=0;
   else if (v>255)
     v=255;
