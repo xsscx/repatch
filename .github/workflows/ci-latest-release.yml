@@ -19,7 +19,7 @@
 #
 ###############################################################
 
-name: ci-pr-549
+name: ci-pr-546
 
 permissions:
   contents: read
@@ -91,8 +91,8 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global credential.helper ""
           unset GITHUB_TOKEN || true
-          git fetch origin pull/549/head:pr-549
-          git checkout pr-549
+          git fetch origin pull/546/head:pr-546
+          git checkout pr-546
           cd Build
           cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INSTALL_PREFIX=$HOME/.local -DCMAKE_BUILD_TYPE=Debug -Wno-dev -DCMAKE_CXX_FLAGS="-g -fsanitize=address,undefined -fno-omit-frame-pointer -Wall" -DENABLE_TOOLS=ON -DENABLE_STATIC_LIBS=ON -DENABLE_SHARED_LIBS=ON Cmake > cmake.log 2>&1
           make -j$(nproc)
