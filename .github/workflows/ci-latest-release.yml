@@ -94,9 +94,8 @@ jobs:
           git fetch origin pull/547/head:pr-547
           git checkout pr-547
           cd Build
-          cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local \
-                -DCMAKE_BUILD_TYPE=Release \
-                -Wno-dev Cmake/
+          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INSTALL_PREFIX=$HOME/.local -DCMAKE_BUILD_TYPE=Debug -Wno-dev -DCMAKE_CXX_FLAGS="-g -fsanitize=address,undefined -fno-omit-frame-pointer -Wall" -DENABLE_TOOLS=ON -DENABLE_STATIC_LIBS=ON -DENABLE_SHARED_LIBS=ON Cmake > cmake.log 2>&1
+          make -j$(nproc)
       - name: Build
         shell: bash
         env:
