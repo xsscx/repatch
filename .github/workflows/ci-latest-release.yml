@@ -1,17 +1,21 @@
 ###############################################################
 #
 ## Copyright (©) 2025 International Color Consortium. 
-##                 All rights reserved. 
-##                 https://color.org
+#                 All rights reserved. 
+#                 https://color.org
 #
 #
-## Intent: ci-latest-release
+# Intent: Specify the PR to Test Workflow
 #
-## Last Updated: 22-NOV-2025 0000Z by David Hoyt 
-#                Add Permission Block
-## TODO: Push binary releases, tags etc...
+## Last Updated: 28-JAN-2026 1400Z by David Hoyt
+##               Added trusted sanitizer pattern from ci-pr-action.yml
+##               Load sanitize-sed.sh from base commit checkout
+##               Security hardening: SHA validation, concurrency control
+##               Applied Hoyt's bash shell prologue security standards
 #
-##
+# Last Updated: 28-NOV-2025 2300Z by David Hoyt 
+#               Added user controllable input (uci) checks
+# 
 #
 #
 #
@@ -19,131 +23,56 @@
 #
 ###############################################################
 
-name: ci-pr-546
+name: PR Status Labeler
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull request number to process manually'
+        required: false
+        default: ''
+        type: string
+  schedule:
+    - cron: '0 */4 * * *'
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, ready_for_review]
 
 permissions:
   contents: read
-  
-on:
-  workflow_dispatch:
+  pull-requests: write
+  statuses: read  #
+
+concurrency:
+  group: "label-pr-${{ github.event.pull_request.number || github.run_id }}"
+  cancel-in-progress: true
 
 jobs:
-  linux:
-    name: "Linux ${{ matrix.compiler }}"
+  label-status:
+    # Only allow manual runs from the repo owner; PR/schedule events still allowed
+    if: >
+      github.event_name != 'workflow_dispatch' ||
+      contains(fromJson('["xsscx","maxderhak","ChrisCoxArt","dwtza"]'), github.actor)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        compiler: [gcc, clang]
-    steps:
-      - name: Checkout master
-        uses: actions/checkout@c2d88d3ecc89a9ef08eebf45d9637801dcee7eb5
 
-      - name: Install Dependencies
-        shell: bash
-        env:
-          BASH_ENV: /dev/null
-        run: |
-          set -euo pipefail
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config --global credential.helper ""
-          unset GITHUB_TOKEN || true
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential cmake gcc g++ clang clang-tools \
-            libpng-dev libxml2 libxml2-dev libtiff-dev \
-            nlohmann-json3-dev libwxgtk3.2-dev wx-common \
-            python3 python3-pip curl git llvm
-      - name: Set Compiler
-        shell: bash
-        env:
-          BASH_ENV: /dev/null
-        run: |
-          set -euo pipefail
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config --global credential.helper ""
-          unset GITHUB_TOKEN || true
-          if [ "${{ matrix.compiler }}" = "gcc" ]; then
-            echo "CC=gcc" >> $GITHUB_ENV
-            echo "CXX=g++" >> $GITHUB_ENV
-          else
-            echo "CC=clang" >> $GITHUB_ENV
-            echo "CXX=clang++" >> $GITHUB_ENV
-          fi
-      - name: Print Compiler Version
-        shell: bash
-        env:
-          BASH_ENV: /dev/null
-        run: |
-          set -euo pipefail
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config --global credential.helper ""
-          unset GITHUB_TOKEN || true
-          echo "Compiler Version:" >> $GITHUB_STEP_SUMMARY
-          $CC --version >> $GITHUB_STEP_SUMMARY
-      - name: CMake Configure
-        shell: bash
-        env:
-          BASH_ENV: /dev/null
-        run: |
-          set -euo pipefail
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config --global credential.helper ""
-          unset GITHUB_TOKEN || true
-          git fetch origin pull/546/head:pr-546
-          git checkout pr-546
-          cd Build
-          cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_INSTALL_PREFIX=$HOME/.local -DCMAKE_BUILD_TYPE=Debug -Wno-dev -DCMAKE_CXX_FLAGS="-g -fsanitize=address,undefined -fno-omit-frame-pointer -Wall" -DENABLE_TOOLS=ON -DENABLE_STATIC_LIBS=ON -DENABLE_SHARED_LIBS=ON Cmake > cmake.log 2>&1
-          make -j$(nproc)
-      - name: Build
-        shell: bash
-        env:
-          BASH_ENV: /dev/null
-        run: |
-          set -euo pipefail
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config --global credential.helper ""
-          unset GITHUB_TOKEN || true
-          cd Build
-          make -j$(nproc)
-          cd ../Testing/
-          echo "=== Updating PATH ==="
-          for d in ../Build/Tools/*; do
-          [ -d "$d" ] && export PATH="$(realpath "$d"):$PATH"
-          done 
-          sh CreateAllProfiles.sh
-          sh RunTests.sh
-          find . -iname "*.icc" | wc -l 
-          wget https://github.com/xsscx/fuzz/raw/refs/heads/master/graphics/tif/ub-enum-icSparseMatrixType-IccTagBasic_cpp-L4690.tiff
-          iccTiffDump ub-enum-icSparseMatrixType-IccTagBasic_cpp-L4690.tiff
-      - name: Verify CMake Cache
-        shell: bash
-        env:
-          BASH_ENV: /dev/null
-        run: |
-          set -euo pipefail
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git config --global credential.helper ""
-          unset GITHUB_TOKEN || true
-          if test -f Build/CMakeCache.txt; then
-          echo "✅ Build OK" | tee -a $GITHUB_STEP_SUMMARY
-          else
-            echo "::error ::Build failed! CMakeCache.txt not found." | tee -a $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-      - name: Upload Linux Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@c2d88d3ecc89a9ef08eebf45d9637801dcee7eb5
         with:
-          name: iccmax-linux-${{ matrix.compiler }}
-          path: |
-            Build
-            LICENSE.md
-            README.md            
-            docs/**
-      - name: Summary Report
-        if: always()
-        shell: bash
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Checkout base commit (trusted sanitizers)
+        uses: actions/checkout@c2d88d3ecc89a9ef08eebf45d9637801dcee7eb5
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          path: base
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Determine PR number or input
+        id: get_pr
+        shell: bash --noprofile --norc {0}
         env:
           BASH_ENV: /dev/null
         run: |
@@ -151,7 +80,156 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global credential.helper ""
           unset GITHUB_TOKEN || true
-          echo "### Linux Build Summary (${{ matrix.compiler }})" >> $GITHUB_STEP_SUMMARY
-          echo "- Build Directory: Build/" >> $GITHUB_STEP_SUMMARY
-          echo "- Artifacts Uploaded: iccdev-linux-${{ matrix.compiler }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Status: Success" >> $GITHUB_STEP_SUMMARY
+
+          INPUT="${{ github.event.inputs.pr_number }}"
+          EVENT_PR="${{ github.event.pull_request.number }}"
+          if [[ "$INPUT" =~ ^[0-9]+$ ]] && [[ -n "$INPUT" ]]; then
+            echo "pr_number=$INPUT" >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT_PR" =~ ^[0-9]+$ ]]; then
+            echo "pr_number=$EVENT_PR" >> "$GITHUB_OUTPUT"
+          else
+            echo "pr_number=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Evaluate PR combined status
+        id: status
+        if: steps.get_pr.outputs.pr_number != '0'
+        shell: bash --noprofile --norc {0}
+        env:
+          BASH_ENV: /dev/null
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global credential.helper ""
+
+          # SHA validation function
+          validate_sha() {
+            local sha="$1"
+            if [[ -z "$sha" ]]; then
+              return 1
+            fi
+            # Require exactly 40 hexadecimal characters
+            if [[ ! "$sha" =~ ^[0-9a-fA-F]{40}$ ]]; then
+              return 1
+            fi
+            return 0
+          }
+
+          PR="${{ steps.get_pr.outputs.pr_number }}"
+
+          # Ensure PR belongs to this repository
+          BASE_REPO=$(gh pr view "$PR" --json baseRepository -q .baseRepository.nameWithOwner 2>/dev/null || echo "")
+          if [[ -z "$BASE_REPO" || "$BASE_REPO" != "${GITHUB_REPOSITORY}" ]]; then
+            echo "status=unknown" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          HEAD=$(gh pr view "$PR" --json headRefOid -q .headRefOid 2>/dev/null || echo "")
+          if [[ -z "$HEAD" ]]; then
+            echo "status=unknown" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Validate SHA format before use
+          if ! validate_sha "$HEAD"; then
+            echo "Warning: invalid commit SHA format" >&2
+            echo "status=unknown" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          STATE=$(gh api "repos/${{ github.repository }}/commits/$HEAD/status" \
+            --jq '.state' 2>/dev/null || echo "unknown")
+
+          echo "status=$STATE" >> "$GITHUB_OUTPUT"
+          echo "Detected status: $STATE"
+
+      - name: Relabel PR based on status
+        id: relabel
+        if: steps.get_pr.outputs.pr_number != '0' && steps.status.outputs.status != '' && steps.status.outputs.status != 'unknown'
+        shell: bash --noprofile --norc {0}
+        env:
+          BASH_ENV: /dev/null
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global credential.helper ""
+
+          PR="${{ steps.get_pr.outputs.pr_number }}"
+          STATE="${{ steps.status.outputs.status }}"
+          ADDED=""
+          REMOVED=""
+
+          case "$STATE" in
+            success)
+              gh pr edit "$PR" --add-label "ci-pass" --remove-label "ci-fail" || true
+              ADDED="passed"
+              REMOVED="failed"
+              ;;
+            failure|error)
+              gh pr edit "$PR" --add-label "ci-fail" --remove-label "ci-pass" || true
+              ADDED="failed"
+              REMOVED="passed"
+              ;;
+            *)
+              echo "No label change required for status: $STATE"
+              ;;
+          esac
+
+          echo "added_label=$ADDED" >> "$GITHUB_OUTPUT"
+          echo "removed_label=$REMOVED" >> "$GITHUB_OUTPUT"
+
+      - name: Generate summary report
+        shell: bash --noprofile --norc {0}
+        env:
+          BASH_ENV: /dev/null
+          GH_EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ steps.get_pr.outputs.pr_number }}
+          DETECTED_STATUS: ${{ steps.status.outputs.status }}
+          LABEL_ADDED: ${{ steps.relabel.outputs.added_label }}
+          LABEL_REMOVED: ${{ steps.relabel.outputs.removed_label }}
+        run: |
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global credential.helper ""
+
+          # Load canonical sanitizers from trusted checkout
+          TRUSTED_SANITIZER="$GITHUB_WORKSPACE/base/.github/scripts/sanitize-sed.sh"
+          if [[ -f "$TRUSTED_SANITIZER" ]]; then
+            # shellcheck disable=SC1090
+            source "$TRUSTED_SANITIZER"
+          else
+            # Fallback: provide a minimal, safe sanitizer to ensure step summaries
+            # are escaped. This is intentionally conservative.
+            escape_html() {
+              local s="$1"
+              s="${s//&/&amp;}"
+              s="${s//</&lt;}"
+              s="${s//>/&gt;}"
+              s="${s//\"/&quot;}"
+              s="${s//\'/&#39;}"
+              printf '%s' "$s"
+            }
+            sanitize_print() { escape_html "$1"; }
+            sanitize_line() { escape_html "$1"; }
+          fi
+
+          # Safe defaults
+          : "${GH_EVENT_NAME:=unknown}"
+          : "${PR_NUMBER:=0}"
+          : "${DETECTED_STATUS:=unknown}"
+          : "${LABEL_ADDED:=none}"
+          : "${LABEL_REMOVED:=none}"
+
+          {
+            echo "### 🧾 PR Status Labeler Summary"
+            echo ""
+            echo "**Trigger Type:** \`$(sanitize_line "$GH_EVENT_NAME")\`"
+            echo "**PR Number:** \`$(sanitize_line "$PR_NUMBER")\`"
+            echo "**Detected Status:** \`$(sanitize_line "$DETECTED_STATUS")\`"
+            echo "**Label Added:** \`$(sanitize_line "$LABEL_ADDED")\`"
+            echo "**Label Removed:** \`$(sanitize_line "$LABEL_REMOVED")\`"
+            echo ""
+            echo "✅ Workflow completed."
+          } >> "$GITHUB_STEP_SUMMARY"
