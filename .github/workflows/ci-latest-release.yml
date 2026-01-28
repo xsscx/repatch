@@ -19,7 +19,7 @@
 #
 ###############################################################
 
-name: ci-latest-release
+name: ci-pr-546
 
 permissions:
   contents: read
@@ -91,6 +91,8 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git config --global credential.helper ""
           unset GITHUB_TOKEN || true
+          git fetch origin pull/547/head:pr-547
+          git checkout pr-547
           cd Build
           cmake -DCMAKE_INSTALL_PREFIX=$HOME/.local \
                 -DCMAKE_BUILD_TYPE=Release \
@@ -114,6 +116,8 @@ jobs:
           sh CreateAllProfiles.sh
           sh RunTests.sh
           find . -iname "*.icc" | wc -l 
+          wget https://github.com/xsscx/fuzz/raw/refs/heads/master/graphics/tif/ub-enum-icSparseMatrixType-IccTagBasic_cpp-L4690.tiff
+          iccTiffDump ub-enum-icSparseMatrixType-IccTagBasic_cpp-L4690.tiff
       - name: Verify CMake Cache
         shell: bash
         env:
@@ -138,7 +142,6 @@ jobs:
             LICENSE.md
             README.md            
             docs/**
-
       - name: Summary Report
         if: always()
         shell: bash
@@ -183,6 +186,8 @@ jobs:
           git config --global credential.helper ""
           unset GITHUB_TOKEN || true
           echo "Setting up CMake build configuration..."
+          git fetch origin pull/547/head:pr-547
+          git checkout pr-547
           cd Build
           sudo rm -rf /Library/Frameworks/Mono.framework/Headers/png.h
           echo 'export PATH="/opt/homebrew/opt/jpeg/bin:$PATH"' >> /Users/runner/.bash_profile
@@ -218,7 +223,10 @@ jobs:
           done 
           sh CreateAllProfiles.sh
           sh RunTests.sh
-          find . -iname "*.icc" | wc -l 
+          find . -iname "*.icc" | wc -l
+          wget https://github.com/xsscx/fuzz/raw/refs/heads/master/graphics/tif/ub-enum-icSparseMatrixType-IccTagBasic_cpp-L4690.tiff
+          iccTiffDump ub-enum-icSparseMatrixType-IccTagBasic_cpp-L4690.tiff
+ 
           
       - name: Upload macOS Artifacts
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
@@ -320,7 +328,6 @@ jobs:
          $env:PATH = $trustedPath
          
           Write-Host "Finished UCI Gate 1 for pwsh" -ForegroundColor Green
-
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
@@ -333,13 +340,11 @@ jobs:
           Set-StrictMode -Version Latest
           $ErrorActionPreference = 'Stop'
           $ProgressPreference = 'SilentlyContinue'
-
           Write-Host "Triggered by:  $env:GITHUB_EVENT_NAME"
           Write-Host "Base branch:   $env:GITHUB_BASE_REF"
           Write-Host "Head branch:   $env:GITHUB_HEAD_REF"
           Write-Host "Commit SHA:    $env:PR_HEAD_SHA"
           Write-Host "OS:            $env:RUNNER_OS"
-
       - name: Install dependencies and build
         shell: pwsh
         env:
@@ -353,8 +358,8 @@ jobs:
             }
           Write-Host "============================= Starting Build =============================" -ForegroundColor Green
           Write-Host "Copyright (©) 2025 International Color Consortium. All rights reserved." -ForegroundColor Green
-          git branch
-          git status
+          git fetch origin pull/547/head:pr-547
+          git checkout pr-547
           Write-Host "========= Fetching Deps... ================`n"
           Start-BitsTransfer -Source "https://github.com/InternationalColorConsortium/iccDEV/releases/download/v2.3.1/vcpkg-exported-deps.zip" -Destination "deps.zip"
           Write-Host "========= Extracting Deps... ================`n"
@@ -362,7 +367,8 @@ jobs:
           cd Build/Cmake
           Write-Host "========= Building... ================`n"  
           cmake  -B build -S . -DCMAKE_TOOLCHAIN_FILE="..\..\scripts\buildsystems\vcpkg.cmake" -DVCPKG_MANIFEST_MODE=OFF -DCMAKE_BUILD_TYPE=Debug  -Wno-dev
-          cmake --build build -- /m /maxcpucount        
+          cmake --build build -- /m /maxcpucount
+          cmake --build build -- /m /maxcpucount          
           $exeDirs = Get-ChildItem -Recurse -File -Include *.exe -Path .\build\ |
               Where-Object { $_.FullName -match 'icc' -and $_.FullName -notmatch '\\CMakeFiles\\' -and $_.Name -notmatch '^CMake(C|CXX)CompilerId\.exe$' } |
               ForEach-Object { Split-Path $_.FullName -Parent } |
@@ -374,6 +380,8 @@ jobs:
           $env:PATH -split ';'
           pwd
           cd ..\..\Testing
+          wget https://github.com/xsscx/fuzz/raw/refs/heads/master/graphics/tif/ub-enum-icSparseMatrixType-IccTagBasic_cpp-L4690.tiff
+          iccTiffDump ub-enum-icSparseMatrixType-IccTagBasic_cpp-L4690.tiff
           .\CreateAllProfiles.bat
           .\RunTests.bat
           cd CalcTest\
@@ -441,5 +449,4 @@ jobs:
           echo "### Windows Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "- Build Directory: Build/" >> $GITHUB_STEP_SUMMARY
           echo "- Artifacts Uploaded:  iccdev-v231-windows-msvc" >> $GITHUB_STEP_SUMMARY
-
           echo "- Status: Success" >> $GITHUB_STEP_SUMMARY
