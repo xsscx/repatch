@@ -380,8 +380,6 @@ jobs:
           $env:PATH -split ';'
           pwd
           cd ..\..\Testing
-          wget https://github.com/xsscx/fuzz/raw/refs/heads/master/graphics/tif/ub-enum-icSparseMatrixType-IccTagBasic_cpp-L4690.tiff
-          iccTiffDump ub-enum-icSparseMatrixType-IccTagBasic_cpp-L4690.tiff
           .\CreateAllProfiles.bat
           .\RunTests.bat
           cd CalcTest\
