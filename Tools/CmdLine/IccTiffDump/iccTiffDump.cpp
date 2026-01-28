@@ -168,10 +168,13 @@ void DumpProfileInfo(CIccProfile* pProfile, std::string prefix)
   
   CIccTag* pEmbedded = pProfile->FindTag(icSigEmbeddedV5ProfileTag);
   if (pEmbedded) {
-    CIccTagEmbeddedProfile* pEmbeddedTag = (CIccTagEmbeddedProfile*)pEmbedded;
-    if (pEmbeddedTag->GetProfile()) {
-      printf("%sSub-Profile:      Embedded\n", prefix.c_str());
-      DumpProfileInfo(pEmbeddedTag->GetProfile(), prefix + " ");
+    // if it has a different type, don't try to dereference it!
+    if (pEmbedded->GetType() == icSigEmbeddedProfileType) {
+      CIccTagEmbeddedProfile* pEmbeddedTag = (CIccTagEmbeddedProfile*)pEmbedded;
+      if (pEmbeddedTag->GetProfile()) {
+        printf("%sSub-Profile:      Embedded\n", prefix.c_str());
+        DumpProfileInfo(pEmbeddedTag->GetProfile(), prefix + " ");
+      }
     }
   }
 }
