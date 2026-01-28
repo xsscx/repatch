@@ -133,7 +133,7 @@ jobs:
 
           # Validate SHA format before use
           if ! validate_sha "$HEAD"; then
-            echo "Warning: invalid commit SHA format" >&2
+            echo "Warning: invalid commit SHA format: ${HEAD:0:10}..." >&2
             echo "status=unknown" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -200,6 +200,8 @@ jobs:
             # shellcheck disable=SC1090
             source "$TRUSTED_SANITIZER"
           else
+            echo "::warning::Trusted sanitizer not found, using fallback" >&2
+            echo "::debug::Using fallback HTML sanitizer" >&2
             # Fallback: provide a minimal, safe sanitizer to ensure step summaries
             # are escaped. This is intentionally conservative.
             escape_html() {
