@@ -1365,14 +1365,15 @@ typedef enum {
                                                   are >= 256 */
 } icDMHalftoneType;
 
-typedef enum {
+typedef enum : uint16_t {
   icSparseMatrixUInt8                = 0x0001,
   icSparseMatrixUInt16               = 0x0002,
   icSparseMatrixFloat16              = 0x0003,
   icSparseMatrixFloat32              = 0x0004,
 
 /* Convenience Enum Definitions - Not defined in ICC specification */
-    icSparseMatrixFloatNum          = 0x0000,//Use internal icFloatNumber encoding
+  icSparseMatrixFloatNum            = 0x0000,//Use internal icFloatNumber encoding
+  icSparseMatrixMaximum             = 0xffff,
 } icSparseMatrixType;
 
 
